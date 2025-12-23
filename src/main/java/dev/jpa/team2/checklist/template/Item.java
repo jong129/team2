@@ -1,4 +1,4 @@
-package dev.jpa.team2.checklist.template.entity;
+package dev.jpa.team2.checklist.template;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -11,7 +11,7 @@ import java.util.List;
 @Setter
 @Entity
 @Table(name = "CHECKLIST_ITEM", schema = "TEAM2")
-public class ChecklistItem {
+public class Item {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE,

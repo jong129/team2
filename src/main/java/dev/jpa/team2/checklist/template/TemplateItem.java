@@ -1,4 +1,4 @@
-package dev.jpa.team2.checklist.template.entity;
+package dev.jpa.team2.checklist.template;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -36,11 +36,11 @@ public class TemplateItem {
     // ======================
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "TEMPLATE_ID", nullable = false)
-    private ChecklistTemplate template;
+    private Template template;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ITEM_ID", nullable = false)
-    private ChecklistItem item;
+    private Item item;
 
     // ======================
     // 속성

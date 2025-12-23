@@ -1,4 +1,4 @@
-package dev.jpa.team2.checklist.template.entity;
+package dev.jpa.team2.checklist.template;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -19,7 +19,7 @@ import java.util.List;
         )
     }
 )
-public class ChecklistTemplate {
+public class Template {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE,

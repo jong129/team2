@@ -1,6 +1,5 @@
-package dev.jpa.team2.checklist.template.repository;
+package dev.jpa.team2.checklist.template;
 
-import dev.jpa.team2.checklist.template.entity.TemplateItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

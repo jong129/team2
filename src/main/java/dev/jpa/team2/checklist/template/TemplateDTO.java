@@ -1,10 +1,8 @@
-package dev.jpa.team2.checklist.template.dto;
-
-import dev.jpa.team2.checklist.template.entity.ChecklistTemplate;
+package dev.jpa.team2.checklist.template;
 
 import java.util.List;
 
-public class TemplateResponseDto {
+public class TemplateDTO {
 
     private Long templateId;
     private String templateType;
@@ -12,12 +10,12 @@ public class TemplateResponseDto {
     private Integer versionNo;
     private String description;
 
-    private List<TemplateItemDto> items;
+    private List<TemplateItemDTO> items;
 
-    public static TemplateResponseDto from(ChecklistTemplate template,
-                                           List<TemplateItemDto> items) {
+    public static TemplateDTO from(Template template,
+                                           List<TemplateItemDTO> items) {
 
-        TemplateResponseDto dto = new TemplateResponseDto();
+        TemplateDTO dto = new TemplateDTO();
         dto.templateId = template.getTemplateId();
         dto.templateType = template.getTemplateType();
         dto.templateName = template.getTemplateName();
@@ -33,5 +31,5 @@ public class TemplateResponseDto {
     public String getTemplateName() { return templateName; }
     public Integer getVersionNo() { return versionNo; }
     public String getDescription() { return description; }
-    public List<TemplateItemDto> getItems() { return items; }
+    public List<TemplateItemDTO> getItems() { return items; }
 }

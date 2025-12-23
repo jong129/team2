@@ -1,9 +1,6 @@
-package dev.jpa.team2.checklist.template.dto;
+package dev.jpa.team2.checklist.template;
 
-import dev.jpa.team2.checklist.template.entity.TemplateItem;
-import dev.jpa.team2.checklist.template.entity.ChecklistItem;
-
-public class TemplateItemDto {
+public class TemplateItemDTO {
 
     private Long itemId;
     private Integer order;
@@ -13,11 +10,11 @@ public class TemplateItemDto {
     private String requiredYn;
     private String riskLevel;
 
-    public static TemplateItemDto fromEntity(TemplateItem templateItem) {
+    public static TemplateItemDTO fromEntity(TemplateItem templateItem) {
 
-        ChecklistItem item = templateItem.getItem();
+        Item item = templateItem.getItem();
 
-        TemplateItemDto dto = new TemplateItemDto();
+        TemplateItemDTO dto = new TemplateItemDTO();
         dto.itemId = item.getItemId();
         dto.order = templateItem.getItemOrder();
         dto.title = item.getItemTitle();

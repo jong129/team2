@@ -38,4 +38,28 @@ public class Documents {
   @Temporal(TemporalType.TIMESTAMP)
   @Column(name = "CREATED_AT")
   private Date createdAt = new Date();
+  // 파일 업로드 관련
+  // -----------------------------------------------------------------------------------
+  /** 메인 이미지 */
+  private String file1 = "";
+  /** 실제 저장된 메인 이미지 */
+  private String file1saved = "";
+  /** 메인 이미지 preview */
+  private String thumb1 = "";s
+  /** 메인 이미지 크기 */
+  private long size1 = 0;
+//-----------------------------------------------------------------------------------
+  public Documents(long userId, String docType, String filePath, String status, Date createdAt, 
+      String file1, String file1saved, String thumb1, long size1) {
+    super();
+    this.userId = userId;
+    this.docType = docType;
+    this.filePath = filePath;
+    this.status = status;
+    this.createdAt = createdAt;   
+    this.file1 = file1;
+    this.file1saved = file1saved;
+    this.thumb1 = thumb1;
+    this.size1 = size1;
+  }
 }

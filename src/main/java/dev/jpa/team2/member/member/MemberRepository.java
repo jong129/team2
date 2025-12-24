@@ -46,6 +46,9 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
   /** 이메일 조회 */
   public Member findByEmail(String email);
 
+  /** 이름 + 이메일로 회원 조회 (아이디 찾기용) */
+  public java.util.Optional<Member> findByNameAndEmail(String name, String email);
+  
   /* ==================================================
    * 5) 로그인 (ID 또는 EMAIL)
    * ================================================== */

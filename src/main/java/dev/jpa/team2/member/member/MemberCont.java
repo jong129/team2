@@ -175,6 +175,31 @@ public class MemberCont {
   }
 
   /**
+   * 아이디 찾기
+   * http://localhost:9100/member/find_id
+   */
+  @PostMapping(path = "/find_id")
+  public ResponseEntity<Map<String, Object>> findId(
+      @RequestParam(name = "name") String name,
+      @RequestParam(name = "email") String email) {
+
+    Map<String, Object> map = new HashMap<>();
+
+    try {
+      String maskedLoginId =
+          memberService.findLoginIdByNameAndEmail(name, email);
+
+      map.put("success", true);
+      map.put("loginId", maskedLoginId);
+
+    } catch (IllegalArgumentException e) {
+      map.put("success", false);
+      map.put("message", e.getMessage());
+    }
+
+    return ResponseEntity.ok(map);
+  }
+  /**
    * 이름 또는 이메일 검색
    * http://localhost:9100/member/search?keyword=홍길동
    */

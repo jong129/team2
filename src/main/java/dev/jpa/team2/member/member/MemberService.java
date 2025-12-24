@@ -21,6 +21,16 @@ public class MemberService {
   public MemberService() {
     System.out.println("-> MemberService created");
   }
+  // 아이디 찾기 뒷 3자리 마킹
+  private String maskLoginId(String loginId) { 
+
+    if (loginId == null || loginId.length() < 4) {
+      return "***";
+    }
+
+    int length = loginId.length();
+    return loginId.substring(0, length - 3) + "***";
+  }
 
   /* ==================================================
    * 1) 중복 검사
@@ -87,6 +97,23 @@ public class MemberService {
   /** Optional PK 조회 */
   public Optional<Member> findById(long memberId) {
     return memberRepository.findById(memberId);
+  }
+
+  /* ==================================================
+   * 4-1) 아이디 찾기
+   * ================================================== */
+  public String findLoginIdByNameAndEmail(String name, String email) {
+
+    Optional<Member> optional =
+        memberRepository.findByNameAndEmail(name, email);
+
+    if (optional.isEmpty()) {
+      throw new IllegalArgumentException("일치하는 회원 정보가 없습니다.");
+    }
+
+    String loginId = optional.get().getLoginId();
+
+    return maskLoginId(loginId);
   }
 
   /* ==================================================

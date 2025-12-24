@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import dev.jpa.team2.member.email.EmailVerificationService;
 
 @Service
 @Transactional
@@ -13,6 +14,9 @@ public class MemberService {
 
   @Autowired
   MemberRepository memberRepository;
+
+  @Autowired
+  private EmailVerificationService emailVerificationService;
 
   public MemberService() {
     System.out.println("-> MemberService created");
@@ -37,10 +41,26 @@ public class MemberService {
    * ================================================== */
 
   public Member save(MemberDTO memberDTO) {
+
+    // 1️⃣ 이메일 인증 여부 확인
+    boolean verified =
+        emailVerificationService.isVerified(memberDTO.getEmail());
+
+    if (!verified) {
+      throw new IllegalStateException("이메일 인증을 완료해야 회원가입이 가능합니다.");
+    }
+
+    // 2️⃣ 이메일 중복 체크 (안전)
+    if (memberRepository.countByEmail(memberDTO.getEmail()) > 0) {
+      throw new IllegalStateException("이미 가입된 이메일입니다.");
+    }
+
+    // 3️⃣ 회원 저장
     Member savedEntity = memberRepository.save(memberDTO.toEntity());
     System.out.println("-> memberId: " + savedEntity.getMemberId());
     return savedEntity;
   }
+
 
   /* ==================================================
    * 3) 전체 목록

@@ -84,6 +84,8 @@ public class Member {
    * 회원 가입 시 사용하는 생성자
    */
   public Member(String loginId, String email, String password, String name, String phone) {
+    Date now = new Date();
+    
     this.loginId = loginId;
     this.email = email;
     this.password = password;
@@ -92,6 +94,9 @@ public class Member {
     this.status = "ACTIVE";
     this.emailVerified = "N";
     this.failedLoginCount = 0;
+    this.createdAt = now;   // 생성 시각
+    this.updatedAt = now;   // 수정 시각도 같이
+    
   }
   
   /* ===============================

@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class RagService {
 
-    private final OpenAiService openAiService;
+    private final FastApiLlmService llmService;
     private final EmbeddingSimilarityService similarityService;
     private final ChatHistoryRepository chatHistoryRepository;
     private final ChatDataRefRepository chatDataRefRepository;
@@ -25,8 +25,7 @@ public class RagService {
     public RagDto ask(RagDto dto) {
 
         // 1️⃣ 질문 임베딩
-        String queryVector =
-            openAiService.embedding(dto.getQuestion());
+        List<Double> queryVector = llmService.embedding(dto.getQuestion());
 
         // 2️⃣ Top-K 검색
         List<EmbeddingSearchResultDto> topChunks =
@@ -38,8 +37,7 @@ public class RagService {
             .collect(Collectors.joining("\n\n"));
 
         // 4️⃣ LLM 호출
-        String answer =
-            openAiService.chat(context, dto.getQuestion());
+        String answer = llmService.chat(context, dto.getQuestion());
 
         // 5️⃣ ChatHistory 저장
         ChatHistory chatHistory =

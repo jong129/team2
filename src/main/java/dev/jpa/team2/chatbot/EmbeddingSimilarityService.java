@@ -15,41 +15,57 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class EmbeddingSimilarityService {
 
-    private final EmbeddingChunkRepository repository;
+    private final EmbeddingChunkRepository embeddingChunkRepository;
 
-    /**
-     * 질문 벡터 기준 Top-K 검색
-     */
-    public List<EmbeddingSearchResultDto> searchTopK(
-            String queryVectorString,
-            int topK) {
+    public List<EmbeddingSearchResultDto> searchTopK(List<Double> queryVector, int topK) {
 
-        List<Double> queryVector =
-            CosineSimilarityUtil.parseVector(queryVectorString);
+        return embeddingChunkRepository.findAll().stream()
+            .map(chunk -> {
+                List<Double> chunkVector = parseVector(chunk.getVectorData());
+                double score = cosineSimilarity(queryVector, chunkVector);
 
-        return repository.findAll()
-                .stream()
-                .map(chunk -> {
+                return new EmbeddingSearchResultDto(
+                    chunk.getChunkId(),
+                    chunk.getFileId(),
+                    chunk.getChunkText(),
+                    score
+                );
+            })
+            .sorted((a, b) -> Double.compare(b.getSimilarityScore(), a.getSimilarityScore()))
+            .limit(topK)
+            .toList();
+    }
 
-                    List<Double> chunkVector =
-                        CosineSimilarityUtil.parseVector(
-                            chunk.getVectorData());
+    // ✅ DB에 저장된 embedding_vector가 문자열(JSON)이라면 파싱 필요
+    private List<Double> parseVector(String vectorJson) {
+        // 예: "[0.1,0.2,0.3]" 형태라고 가정
+        String cleaned = vectorJson.replace("[", "").replace("]", "").trim();
+        if (cleaned.isEmpty()) return List.of();
 
-                    double score =
-                        CosineSimilarityUtil.cosineSimilarity(
-                            queryVector, chunkVector);
+        String[] parts = cleaned.split(",");
+        return java.util.Arrays.stream(parts)
+            .map(String::trim)
+            .map(Double::parseDouble)
+            .toList();
+    }
 
-                    return new EmbeddingSearchResultDto(
-                        chunk.getChunkId(),
-                        chunk.getFileId(),
-                        chunk.getChunkText(),
-                        score
-                    );
-                })
-                .sorted(Comparator.comparing(
-                    EmbeddingSearchResultDto::getSimilarityScore)
-                    .reversed())
-                .limit(topK)
-                .collect(Collectors.toList());
+    private double cosineSimilarity(List<Double> a, List<Double> b) {
+        if (a.size() != b.size() || a.isEmpty()) return 0.0;
+
+        double dot = 0.0;
+        double normA = 0.0;
+        double normB = 0.0;
+
+        for (int i = 0; i < a.size(); i++) {
+            double x = a.get(i);
+            double y = b.get(i);
+            dot += x * y;
+            normA += x * x;
+            normB += y * y;
+        }
+
+        double denom = Math.sqrt(normA) * Math.sqrt(normB);
+        return denom == 0 ? 0.0 : dot / denom;
     }
 }
+

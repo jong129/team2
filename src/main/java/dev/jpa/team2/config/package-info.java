@@ -1,1 +1,0 @@
-package dev.jpa.team2.config;

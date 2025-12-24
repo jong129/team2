@@ -40,15 +40,15 @@ public class Documents {
   private Date createdAt = new Date();
   // 파일 업로드 관련
   // -----------------------------------------------------------------------------------
-  /** 메인 이미지 */
   private String file1 = "";
-  /** 실제 저장된 메인 이미지 */
   private String file1saved = "";
-  /** 메인 이미지 preview */
-  private String thumb1 = "";s
-  /** 메인 이미지 크기 */
+  private String thumb1="";
   private long size1 = 0;
+  
 //-----------------------------------------------------------------------------------
+  public Documents(){
+    
+  }
   public Documents(long userId, String docType, String filePath, String status, Date createdAt, 
       String file1, String file1saved, String thumb1, long size1) {
     super();

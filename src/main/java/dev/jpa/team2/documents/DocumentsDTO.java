@@ -16,8 +16,8 @@ import lombok.ToString;
 @Getter
 @Setter
 @ToString
-@NoArgsConstructor
-@AllArgsConstructor
+@NoArgsConstructor          // 기본 생성자 자동 생성
+@AllArgsConstructor         // 전체 필드 생성자
 public class DocumentsDTO {
   private Long docId;
 
@@ -50,8 +50,6 @@ public class DocumentsDTO {
   /** 메인 이미지 크기 */
   private long size1 = 0;
 //-----------------------------------------------------------------------------------
-  public DocumentsDTO() {
-  }
 
   public DocumentsDTO(Long docId, Long userId, String docType,
                       String filePath, String status, Date createdAt) {

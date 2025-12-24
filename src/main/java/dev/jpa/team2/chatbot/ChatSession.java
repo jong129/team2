@@ -2,19 +2,11 @@ package dev.jpa.team2.chatbot;
 
 import java.time.LocalDateTime;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.SequenceGenerator;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
-@Getter
-@Setter
+@Getter @Setter
 @NoArgsConstructor
 public class ChatSession {
 
@@ -27,15 +19,30 @@ public class ChatSession {
     @Column(name = "MEMBER_ID", nullable = false)
     private Long memberId;
 
+    @Column(name = "TITLE")
+    private String title;
+
+    @Column(name = "SESSION_STATUS", nullable = false)
+    private String sessionStatus; // ACTIVE / ARCHIVED / DELETED
+
     @Column(name = "START_TIME")
     private LocalDateTime startTime;
 
     @Column(name = "END_TIME")
     private LocalDateTime endTime;
 
-    @Column(name = "SESSION_STATUS")
-    private String sessionStatus;
+    // ✅ 세션 리스트 정렬에 핵심
+    @Column(name = "LAST_MESSAGE_AT")
+    private LocalDateTime lastMessageAt;
 
-    @Column(name = "TITLE")
-    private String title;
+    // ✅ soft delete
+    @Column(name = "DELETED_AT")
+    private LocalDateTime deletedAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.sessionStatus == null) this.sessionStatus = "ACTIVE";
+        if (this.startTime == null) this.startTime = LocalDateTime.now();
+        if (this.lastMessageAt == null) this.lastMessageAt = this.startTime;
+    }
 }

@@ -4,20 +4,19 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "CHAT_DATA_REF")
 @Getter
 @NoArgsConstructor
-@SequenceGenerator(
-    name = "CHAT_DATA_REF_SEQ_GEN",
-    sequenceName = "SEQ_CHAT_DATA_REF_ID",
-    allocationSize = 1
-)
 public class ChatDataRef {
 
     @Id
     @GeneratedValue(
         strategy = GenerationType.SEQUENCE,
-        generator = "CHAT_DATA_REF_SEQ_GEN"
+        generator = "CHAT_DATA_REF_SEQ"
+    )
+    @SequenceGenerator(
+        name = "CHAT_DATA_REF_SEQ",
+        sequenceName = "SEQ_CHAT_DATA_REF_ID",
+        allocationSize = 1
     )
     @Column(name = "REF_ID")
     private Long refId;

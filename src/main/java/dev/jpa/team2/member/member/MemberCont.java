@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpSession;
+
 @CrossOrigin(
     origins = "http://localhost:5173",
     allowCredentials = "true"
@@ -142,7 +144,8 @@ public class MemberCont {
   @PostMapping(path = "/login")
   public ResponseEntity<Map<String, Object>> login(
       @RequestParam(name = "loginInput", defaultValue = "") String loginInput,
-      @RequestParam(name = "password", defaultValue = "") String password) {
+      @RequestParam(name = "password", defaultValue = "") String password,
+      HttpSession session) {
 
     Map<String, Object> map = new HashMap<>();
 
@@ -165,6 +168,9 @@ public class MemberCont {
     }
 
     memberService.loginSuccess(member.getMemberId());
+    
+    // 로그인 사용자 기억
+    session.setAttribute("LOGIN_MEMBER_ID", member.getMemberId());
 
     map.put("cnt", 1); // 로그인 성공
     map.put("memberId", member.getMemberId());

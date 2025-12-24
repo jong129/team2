@@ -2,54 +2,54 @@ package dev.jpa.team2.chatbot;
 
 import java.time.LocalDateTime;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
-import jakarta.persistence.SequenceGenerator;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
-@Getter
-@Setter
+@Table(name = "CHAT_MESSAGE")
+@Getter @Setter
 @NoArgsConstructor
-@SequenceGenerator(
-    name = "CHAT_HISTORY_SEQ_GEN",
-    sequenceName = "SEQ_CHAT_HISTORY_ID",
-    allocationSize = 1
-)
 public class ChatHistory {
 
     @Id
-    @GeneratedValue(
-        strategy = GenerationType.SEQUENCE,
-        generator = "CHAT_HISTORY_SEQ_GEN"
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "CHAT_MESSAGE_SEQ")
+    @SequenceGenerator(
+        name = "CHAT_MESSAGE_SEQ",
+        sequenceName = "SEQ_CHAT_MESSAGE_ID",
+        allocationSize = 1
     )
-    @Column(name = "CHAT_ID")
-    private Long chatId;
+    @Column(name = "MESSAGE_ID")
+    private Long chatId; // 기존 코드 호환 위해 변수명 chatId 유지(원하면 messageId로 바꿔도 됨)
 
     @Column(name = "SESSION_ID", nullable = false)
     private Long sessionId;
 
-    @Lob
-    @Column(name = "QUESTION", nullable = false)
-    private String question;
+    @Column(name = "ROLE", nullable = false)
+    private String role; // USER / ASSISTANT / SYSTEM
 
     @Lob
-    @Column(name = "ANSWER", nullable = false)
-    private String answer;
+    @Column(name = "CONTENT", nullable = false)
+    private String content;
 
-    @Column(name = "CREATED_AT")
+    @Column(name = "CREATED_AT", nullable = false)
     private LocalDateTime createdAt;
 
-    public ChatHistory(Long sessionId, String question, String answer) {
-        this.sessionId = sessionId;
-        this.question = question;
-        this.answer = answer;
-        this.createdAt = LocalDateTime.now();
+    // 선택(나중에 분석/과금/성능로그)
+    @Column(name = "MODEL")
+    private String model;
+
+    @Column(name = "TOKENS_IN")
+    private Integer tokensIn;
+
+    @Column(name = "TOKENS_OUT")
+    private Integer tokensOut;
+
+    public static ChatHistory of(Long sessionId, String role, String content) {
+        ChatHistory m = new ChatHistory();
+        m.sessionId = sessionId;
+        m.role = role;
+        m.content = content;
+        m.createdAt = LocalDateTime.now();
+        return m;
     }
 }

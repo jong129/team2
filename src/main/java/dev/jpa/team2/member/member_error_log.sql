@@ -1,0 +1,43 @@
+--- 회원 서비스 전용 에러 로그 테이블 ---
+
+DROP TABLE MEMBER_ERROR_LOG CASCADE CONSTRAINTS;
+DROP SEQUENCE SEQ_MEMBER_ERROR_LOG_ID;
+
+CREATE TABLE MEMBER_ERROR_LOG (
+    ERROR_ID      NUMBER          NOT NULL,                -- 에러 PK
+    MEMBER_ID     NUMBER          NOT NULL,                 -- 회원 PK
+    ERROR_MESSAGE VARCHAR2(1000)  NOT NULL,                 -- 에러 요약 메시지
+    STACK_TRACE   CLOB,                                     -- 에러 상세 스택 (옵션)
+    ERROR_AT      DATE           DEFAULT SYSDATE NOT NULL,  -- 에러 발생 시각
+    REQUEST_URI   VARCHAR2(300),                            -- 요청 URL
+    METHOD        VARCHAR2(10),                             -- HTTP 메서드(GET/POST 등)
+    REQUEST_IP    VARCHAR2(50),                             -- 요청한 IP
+    USER_AGENT    VARCHAR2(300),                            -- 브라우저/기기 정보
+
+    CONSTRAINT PK_MEMBER_ERROR_LOG PRIMARY KEY (ERROR_ID),
+
+    CONSTRAINT FK_MEMBER_ERROR_LOG_MEMBER
+        FOREIGN KEY (MEMBER_ID)
+        REFERENCES MEMBER(MEMBER_ID)
+);
+
+COMMENT ON TABLE MEMBER_ERROR_LOG IS '회원 서비스 에러 로그 테이블';
+
+COMMENT ON COLUMN MEMBER_ERROR_LOG.ERROR_ID      IS '회원 서비스 에러 로그 PK';
+COMMENT ON COLUMN MEMBER_ERROR_LOG.MEMBER_ID     IS '요청한 회원 PK(비회원 요청 시 NULL)';
+COMMENT ON COLUMN MEMBER_ERROR_LOG.ERROR_MESSAGE IS '에러 요약 메시지';
+COMMENT ON COLUMN MEMBER_ERROR_LOG.STACK_TRACE   IS '에러 스택 상세 정보';
+COMMENT ON COLUMN MEMBER_ERROR_LOG.ERROR_AT      IS '에러 발생 시각';
+COMMENT ON COLUMN MEMBER_ERROR_LOG.REQUEST_URI   IS '요청 URI';
+COMMENT ON COLUMN MEMBER_ERROR_LOG.METHOD        IS 'HTTP 요청 메서드';
+COMMENT ON COLUMN MEMBER_ERROR_LOG.REQUEST_IP    IS '요청 IP';
+COMMENT ON COLUMN MEMBER_ERROR_LOG.USER_AGENT    IS '요청 브라우저/기기 정보';
+
+CREATE SEQUENCE SEQ_MEMBER_ERROR_LOG_ID
+    START WITH 1
+    INCREMENT BY 1
+    NOMAXVALUE
+    NOCYCLE
+    NOCACHE;
+
+commit;

@@ -1,0 +1,144 @@
+--- 회원 테이블 ---
+
+DROP TABLE MEMBER CASCADE CONSTRAINTS;
+
+CREATE TABLE MEMBER (
+    MEMBER_ID          NUMBER(10)       NOT NULL,
+    LOGIN_ID           VARCHAR2(100)    NOT NULL,
+    EMAIL              VARCHAR2(255)    NOT NULL,
+    PASSWORD           VARCHAR2(255)    NOT NULL,
+    NAME               VARCHAR2(100)    NOT NULL,
+    PHONE              VARCHAR2(50),
+    STATUS             VARCHAR2(30)     DEFAULT 'ACTIVE' NOT NULL,        -- ACTIVE / LOCKED / BLOCKED / WITHDRAWN 등
+    EMAIL_VERIFIED     CHAR(1)          DEFAULT 'N' NOT NULL,       -- 이메일 인증 여부
+    LAST_LOGIN_AT      DATE,
+    
+    -- 로그인 실패/잠금 관련
+    FAILED_LOGIN_COUNT     NUMBER       DEFAULT 0 NOT NULL,   -- 로그인 실패 횟수
+    LAST_FAILED_LOGIN_AT   DATE,                        -- 마지막 실패 시간
+    LOCKED_AT              DATE,                        -- 계정 잠긴 시간
+    
+    CREATED_AT         DATE             DEFAULT SYSDATE NOT NULL,
+    UPDATED_AT         DATE             DEFAULT SYSDATE NOT NULL,
+
+    CONSTRAINT PK_MEMBER PRIMARY KEY (MEMBER_ID),
+    CONSTRAINT UQ_MEMBER_LOGIN_ID UNIQUE (LOGIN_ID),
+    CONSTRAINT UQ_MEMBER_EMAIL UNIQUE (EMAIL),
+    CONSTRAINT CK_MEMBER_EMAIL_VERIFIED CHECK (EMAIL_VERIFIED IN ('Y','N')),
+    CONSTRAINT CK_MEMBER_STATUS CHECK (STATUS IN ('ACTIVE','BLOCKED', 'LOCKED', 'WITHDRAWN'))
+);
+
+COMMENT ON TABLE MEMBER IS '회원 기본 정보 테이블';
+
+COMMENT ON COLUMN MEMBER.MEMBER_ID              IS '회원 PK';
+COMMENT ON COLUMN MEMBER.LOGIN_ID               IS '아이디';
+COMMENT ON COLUMN MEMBER.EMAIL                  IS '이메일';
+COMMENT ON COLUMN MEMBER.PASSWORD               IS '비밀번호';
+COMMENT ON COLUMN MEMBER.NAME                   IS '이름';
+COMMENT ON COLUMN MEMBER.PHONE                  IS '휴대폰 번호';
+COMMENT ON COLUMN MEMBER.STATUS                 IS '계정 상태(ACTIVE/LOCKED/BLOCKED/WITHDRAWN 등)';
+COMMENT ON COLUMN MEMBER.EMAIL_VERIFIED         IS '이메일 인증 여부(Y/N)';
+COMMENT ON COLUMN MEMBER.LAST_LOGIN_AT          IS '마지막 로그인 시간';
+COMMENT ON COLUMN MEMBER.FAILED_LOGIN_COUNT     IS '로그인 실패 횟수';
+COMMENT ON COLUMN MEMBER.LAST_FAILED_LOGIN_AT   IS '마지막 실패 시간';
+COMMENT ON COLUMN MEMBER.LOCKED_AT              IS '계정 잠긴 시간';
+COMMENT ON COLUMN MEMBER.CREATED_AT             IS '생성일시';
+COMMENT ON COLUMN MEMBER.UPDATED_AT             IS '수정일시';
+
+
+DROP SEQUENCE SEQ_MEMBER_ID;
+
+CREATE SEQUENCE SEQ_MEMBER_ID
+  START WITH 1                  -- 시작 번호
+  INCREMENT BY 1                -- 증가값
+  MAXVALUE 9999999999           -- 최대값: 9999999999 --> NUMBER(10) 대응
+  CACHE 2                       -- 2번은 메모리에서만 계산
+  NOCYCLE;                      -- 다시 1부터 생성되는 것을 방지
+
+-- INSERT문
+INSERT INTO MEMBER (MEMBER_ID,LOGIN_ID,EMAIL,PASSWORD,NAME,PHONE,CREATED_AT) 
+VALUES (SEQ_MEMBER_ID.nextval,'admin1','admin1@email.com','1234','ADMIN1','010-1111-2222',sysdate);
+
+INSERT INTO MEMBER (MEMBER_ID,LOGIN_ID,EMAIL,PASSWORD,NAME,PHONE,CREATED_AT) 
+VALUES (SEQ_MEMBER_ID.nextval,'admin2','admin2@email.com','1234','ADMIN2','010-1111-2222',sysdate);
+
+INSERT INTO MEMBER (MEMBER_ID,LOGIN_ID,EMAIL,PASSWORD,NAME,PHONE,CREATED_AT) 
+VALUES (SEQ_MEMBER_ID.nextval,'user1','user1@email.com','1234','홍길동','010-1111-2222',sysdate);
+
+COMMIT;
+
+-- SELECT문
+SELECT * 
+FROM MEMBER
+ORDER BY MEMBER_ID DESC;
+
+SELECT *
+FROM MEMBER
+WHERE LOGIN_ID = 'admin1';
+
+SELECT *
+FROM MEMBER
+WHERE EMAIL = 'admin1@email.com';
+
+-- UPDATE문
+UPDATE MEMBER
+SET NAME='김철수', PHONE='010-0000-0000'
+WHERE MEMBER_ID = 3;
+
+UPDATE MEMBER
+SET PROFILE_IMAGE = '/images/admin1.png'
+WHERE MEMBER_ID = 1;
+
+-- DELETE문
+DELETE FROM MEMBER
+WHERE MEMBER_ID = 3;
+
+
+-- LOGIN : 이메일 또는 로그인 ID로 로그인 시도
+SELECT 
+    MEMBER_ID,
+    LOGIN_ID,
+    EMAIL,
+    PASSWORD,
+    STATUS,
+    FAILED_LOGIN_COUNT,
+    LOCKED_AT
+FROM MEMBER
+WHERE (LOGIN_ID = :login_input OR EMAIL = :login_input);
+
+-- 로그인 성공시 처리
+UPDATE MEMBER
+SET
+    FAILED_LOGIN_COUNT = 0,
+    STATUS = 'ACTIVE',
+    LAST_LOGIN_AT = SYSDATE
+WHERE MEMBER_ID = :member_id;
+
+-- 로그인 실패 시 실패 횟수 증가
+UPDATE MEMBER
+SET 
+    FAILED_LOGIN_COUNT = FAILED_LOGIN_COUNT + 1,
+    LAST_FAILED_LOGIN_AT = SYSDATE
+WHERE MEMBER_ID = :member_id;
+
+-- 로그인 실패 횟수 초과 시 계정 잠금
+UPDATE MEMBER
+SET
+    STATUS = 'LOCKED',
+    LOCKED_AT = SYSDATE
+WHERE MEMBER_ID = :member_id;
+
+-- 계정 잠금 해제 (관리자 or 인증으로 해제)
+UPDATE MEMBER
+SET 
+    STATUS = 'ACTIVE',
+    FAILED_LOGIN_COUNT = 0,
+    LOCKED_AT = NULL
+WHERE MEMBER_ID = :member_id;
+
+-- 이름 또는 이메일로 검색
+SELECT *
+FROM MEMBER
+WHERE NAME LIKE '%' || :keyword || '%'
+   OR EMAIL LIKE '%' || :keyword || '%';
+

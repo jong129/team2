@@ -1,0 +1,37 @@
+-- 공지사항 테이블
+
+DROP TABLE NOTICE 
+
+CREATE TABLE NOTICE (
+    NOTICE_ID      NUMBER(10)               NOT NULL,
+    ADMIN_ID       NUMBER(10)               NOT NULL,
+    TITLE          VARCHAR2(255)            NOT NULL,
+    CONTENT        CLOB                     NOT NULL,
+    VISIBLE        CHAR(1) DEFAULT '1'      NOT NULL,   -- 1: 표시, 0: 숨김
+    CREATED_AT     DATE                     DEFAULT SYSDATE NOT NULL,
+    UPDATED_AT     DATE                     DEFAULT SYSDATE NOT NULL,
+
+    CONSTRAINT PK_NOTICE PRIMARY KEY (NOTICE_ID),
+    CONSTRAINT CK_NOTICE_VISIBLE CHECK (VISIBLE IN ('0', '1')),
+    CONSTRAINT FK_NOTICE_ADMIN 
+        FOREIGN KEY (ADMIN_ID) REFERENCES MEMBER (MEMBER_ID)
+);
+
+DROP SEQUENCE SEQ_NOTICE;
+
+CREATE SEQUENCE SEQ_NOTICE
+  START WITH 1                  -- 시작 번호
+  INCREMENT BY 1                -- 증가값
+  MAXVALUE 9999999999           -- 최대값: 9999999999 --> NUMBER(10) 대응
+  CACHE 2                       -- 2번은 메모리에서만 계산
+  NOCYCLE;                      -- 다시 1부터 생성되는 것을 방지
+
+
+-- 참고 : UPDATED_AT 자동 갱신 트리거
+CREATE OR REPLACE TRIGGER TRG_NOTICE_UPDATED_AT
+BEFORE UPDATE ON NOTICE
+FOR EACH ROW
+BEGIN
+    :NEW.UPDATED_AT := SYSDATE;
+END;
+/

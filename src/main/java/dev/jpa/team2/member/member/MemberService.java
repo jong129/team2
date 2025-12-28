@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import dev.jpa.team2.member.email.EmailVerificationService;
 
 @Service
 @Transactional
@@ -14,8 +15,21 @@ public class MemberService {
   @Autowired
   MemberRepository memberRepository;
 
+  @Autowired
+  private EmailVerificationService emailVerificationService;
+
   public MemberService() {
     System.out.println("-> MemberService created");
+  }
+  // 아이디 찾기 뒷 3자리 마킹
+  private String maskLoginId(String loginId) { 
+
+    if (loginId == null || loginId.length() < 4) {
+      return "***";
+    }
+
+    int length = loginId.length();
+    return loginId.substring(0, length - 3) + "***";
   }
 
   /* ==================================================
@@ -37,10 +51,26 @@ public class MemberService {
    * ================================================== */
 
   public Member save(MemberDTO memberDTO) {
+
+    // 1️⃣ 이메일 인증 여부 확인
+    boolean verified =
+        emailVerificationService.isVerified(memberDTO.getEmail());
+
+    if (!verified) {
+      throw new IllegalStateException("이메일 인증을 완료해야 회원가입이 가능합니다.");
+    }
+
+    // 2️⃣ 이메일 중복 체크 (안전)
+    if (memberRepository.countByEmail(memberDTO.getEmail()) > 0) {
+      throw new IllegalStateException("이미 가입된 이메일입니다.");
+    }
+
+    // 3️⃣ 회원 저장
     Member savedEntity = memberRepository.save(memberDTO.toEntity());
     System.out.println("-> memberId: " + savedEntity.getMemberId());
     return savedEntity;
   }
+
 
   /* ==================================================
    * 3) 전체 목록
@@ -67,6 +97,23 @@ public class MemberService {
   /** Optional PK 조회 */
   public Optional<Member> findById(long memberId) {
     return memberRepository.findById(memberId);
+  }
+
+  /* ==================================================
+   * 4-1) 아이디 찾기
+   * ================================================== */
+  public String findLoginIdByNameAndEmail(String name, String email) {
+
+    Optional<Member> optional =
+        memberRepository.findByNameAndEmail(name, email);
+
+    if (optional.isEmpty()) {
+      throw new IllegalArgumentException("일치하는 회원 정보가 없습니다.");
+    }
+
+    String loginId = optional.get().getLoginId();
+
+    return maskLoginId(loginId);
   }
 
   /* ==================================================

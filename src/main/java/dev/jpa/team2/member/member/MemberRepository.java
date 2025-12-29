@@ -1,6 +1,7 @@
 package dev.jpa.team2.member.member;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -49,6 +50,8 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
   /** 이름 + 이메일로 회원 조회 (아이디 찾기용) */
   public java.util.Optional<Member> findByNameAndEmail(String name, String email);
   
+  /** 로그인ID + 이메일로 회원 조회 (비밀번호 재설정용) */
+  Optional<Member> findByLoginIdAndEmail(String loginId, String email);
   /* ==================================================
    * 5) 로그인 (ID 또는 EMAIL)
    * ================================================== */

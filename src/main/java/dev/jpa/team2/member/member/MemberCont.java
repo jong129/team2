@@ -20,11 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpSession;
 
-@CrossOrigin(
-    origins = "http://localhost:5173",
-    allowCredentials = "true"
-)
-
 @RestController
 @RequestMapping("/member")
 public class MemberCont {

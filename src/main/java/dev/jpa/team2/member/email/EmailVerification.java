@@ -41,7 +41,12 @@ public class EmailVerification {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CREATED_AT", nullable = false)
     private Date createdAt;
-
+    
+    public void resetVerified() {
+      this.verifiedYn = "N";
+      this.verifiedAt = null;
+  }
+    
     protected EmailVerification() {}
 
     /* ===============================

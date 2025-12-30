@@ -35,7 +35,7 @@ public class ChatSession {
     @Column(name = "LAST_MESSAGE_AT")
     private LocalDateTime lastMessageAt;
 
-    // soft delete
+    // 삭제
     @Column(name = "DELETED_AT")
     private LocalDateTime deletedAt;
 

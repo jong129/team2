@@ -8,7 +8,7 @@ import lombok.*;
 @AllArgsConstructor
 public class ChatMessageDto {
     private Long chatId;
-    private String role;     // user / ai 로 내려도 되고, USER/ASSISTANT로 내려도 됨
+    private String role;     // user / ai 
     private String content;
     private LocalDateTime createdAt;
 

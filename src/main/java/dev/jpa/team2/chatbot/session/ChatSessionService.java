@@ -19,7 +19,7 @@ public class ChatSessionService {
 
     private final ChatSessionRepository sessionRepo;
 
-    // ✅ 세션 생성
+    // 세션 생성
     public ChatSession createSession(Long memberId, String title) {
         String t = (title == null || title.trim().isEmpty()) ? "새 대화" : title.trim();
 
@@ -38,26 +38,26 @@ public class ChatSessionService {
         return saved;
     }
 
-    // ✅ 최근 ACTIVE 세션(없으면 생성)
+    // 최근 ACTIVE 세션(없으면 생성)
     public ChatSession getOrCreateLatestActiveSession(Long memberId) {
         return sessionRepo
             .findTopByMemberIdAndSessionStatusOrderByLastMessageAtDesc(memberId, "ACTIVE")
             .orElseGet(() -> createSession(memberId, "새 대화"));
     }
 
-    // ✅ 세션 소유 검증
+    // 세션 소유 검증
     public ChatSession requireOwnedSession(Long memberId, Long sessionId) {
         return sessionRepo.findBySessionIdAndMemberId(sessionId, memberId)
             .orElseThrow(() -> new RuntimeException("세션이 없거나 권한이 없습니다. sessionId=" + sessionId));
     }
 
-    // ✅ 최근 시간 업데이트
+    // 최근 시간 업데이트
     public void touchLastMessageAt(ChatSession s) {
         s.setLastMessageAt(LocalDateTime.now());
         sessionRepo.save(s);
     }
 
-    // ✅ 날짜별 세션 그룹 (aibotpage)
+    // 날짜별 세션 그룹 (aibotpage)
     @Transactional(readOnly = true)
     public List<ChatSessionDto.GroupedByDate<ChatSessionDto.SessionItem>> getGroupedSessions(Long memberId) {
 
@@ -86,7 +86,7 @@ public class ChatSessionService {
         return out;
     }
 
-    // ✅ 세션 삭제(소프트)
+    // 세션 삭제
     public void softDelete(Long memberId, Long sessionId) {
         ChatSession s = requireOwnedSession(memberId, sessionId);
         s.setSessionStatus("DELETED");

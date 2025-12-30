@@ -5,7 +5,7 @@ import lombok.*;
 public class EmbeddingChunkDto {
 
     // =========================
-    // 1) 청크 생성 요청
+    // 청크 생성 요청
     // =========================
     @Getter @Setter
     @NoArgsConstructor
@@ -16,7 +16,7 @@ public class EmbeddingChunkDto {
     }
 
     // =========================
-    // 2) 청크 생성 응답
+    // 청크 생성 응답
     // =========================
     @Getter
     @NoArgsConstructor

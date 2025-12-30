@@ -19,7 +19,7 @@ public interface ChatMessageRefRepository extends JpaRepository<ChatMessageRef, 
     """)
     Object[] statsAll(@Param("since") LocalDateTime since);
 
-    // 내 통계: chat_message -> chat_session -> member_id 로 조인해서 내 것만
+    // 회원별 통계: chat_message -> chat_session -> member_id 로 조인해서 회원것만
     @Query("""
         select count(r), avg(r.score)
         from ChatMessageRef r
@@ -40,7 +40,7 @@ public interface ChatMessageRefRepository extends JpaRepository<ChatMessageRef, 
     """)
     List<Object[]> topChunksAll(@Param("since") LocalDateTime since, Pageable pageable);
 
-    // 내 Top chunk
+    // 회원 Top chunk
     @Query("""
         select r.chunkId, count(r), avg(r.score)
         from ChatMessageRef r

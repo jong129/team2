@@ -6,9 +6,7 @@ import lombok.*;
 
 public class ChatSessionDto {
 
-    // =========================
-    // 1) 세션 생성 요청 DTO (기존 ChatSessionCreateDto)
-    // =========================
+    // 세션 생성 요청 DTO
     @Getter @Setter
     @NoArgsConstructor
     @AllArgsConstructor
@@ -16,9 +14,7 @@ public class ChatSessionDto {
         private String title;
     }
 
-    // =========================
-    // 2) 세션 응답 DTO (기존 ChatSessionDto)
-    // =========================
+    // 세션 응답 DTO
     @Getter @Setter
     @NoArgsConstructor
     @AllArgsConstructor
@@ -38,9 +34,7 @@ public class ChatSessionDto {
         }
     }
 
-    // =========================
     // (선택) 생성 응답
-    // =========================
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
@@ -50,9 +44,7 @@ public class ChatSessionDto {
         private Long sessionId;
     }
 
-    // =========================
-    // 3) 날짜별 그룹 DTO (기존 GroupedSessionsDto, GroupedSearchResultsDto 공통)
-    // =========================
+    // 날짜별 그룹 DTO
     @Getter @Setter
     @NoArgsConstructor
     @AllArgsConstructor
@@ -61,10 +53,7 @@ public class ChatSessionDto {
         private List<T> items;
     }
 
-    // =========================
-    // 4) 검색 결과 DTO (검색 그룹에 들어가는 아이템)
-    //    ※ 너 프로젝트에 이미 SearchResultDto가 있으면 이건 빼고 그걸 써도 됨
-    // =========================
+    // 검색 결과 DTO (검색 그룹에 들어가는 아이템)
     @Getter @Setter
     @NoArgsConstructor
     @AllArgsConstructor

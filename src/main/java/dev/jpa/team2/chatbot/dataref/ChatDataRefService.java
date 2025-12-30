@@ -7,11 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import dev.jpa.team2.chatbot.embeddingchunk.EmbeddingChunkService;
-import dev.jpa.team2.chatbot.message.ChatMessageDto;
-import dev.jpa.team2.chatbot.message.ChatMessageService;
 import dev.jpa.team2.chatbot.session.ChatSession;
 import dev.jpa.team2.chatbot.session.ChatSessionRepository;
-import dev.jpa.team2.chatbot.session.ChatSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,7 +21,7 @@ public class ChatDataRefService {
     private final ChatDataRefRepository chatDataRefRepository;
     private final ChatSessionRepository chatSessionRepository;
 
-    // ✅ 추가: embedding 저장 서비스
+    // embedding 저장 서비스
     private final EmbeddingChunkService embeddingChunkService;
 
     public ChatDataRefDto.Response attachToLatestSession(Long memberId, ChatDataRefDto.Request req) {
@@ -40,13 +37,13 @@ public class ChatDataRefService {
 
         ChatDataRef saved = chatDataRefRefSave(memberId, session, req);
 
-        // ✅ (중요) ref 저장 직후, embedding_chunk 자동 생성
+        // ref 저장 직후, embedding_chunk 자동 생성
         try {
             int inserted = embeddingChunkService.saveChunksFromText(saved.getRefId(), saved.getSummary());
             log.info("[ChatDataRefService] embedding chunks inserted={} | refId={} | sessionId={}",
                     inserted, saved.getRefId(), session.getSessionId());
         } catch (Exception e) {
-            // ✅ 실패해도 ref 자체는 저장된 상태 유지 (서비스 전체가 죽지 않게)
+            // 실패해도 ref 자체는 저장된 상태 유지 (서비스 전체가 죽지 않게)
             log.error("[ChatDataRefService] embedding chunk generation failed | refId={}", saved.getRefId(), e);
         }
 

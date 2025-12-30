@@ -40,13 +40,13 @@ public class RagService {
         Long sessionId = dto.getSessionId();
         String question = dto.getQuestion();
 
-        // 1) 세션 소유권 체크
+        // 세션 소유권 체크
         chatSessionService.requireOwnedSession(memberId, sessionId);
 
-        // 2) 사용자 메시지 저장
+        // 사용자 메시지 저장
         ChatMessage userMsg = chatMessageService.saveMessage(memberId, sessionId, "USER", question);
 
-        // 3) 세션 컨텍스트(ChatDataRef) 구성
+        // 세션 컨텍스트(ChatDataRef) 구성
         String sessionContext = chatDataRefRepository
             .findByMemberIdAndSessionIdOrderByCreatedAtDesc(memberId, sessionId)
             .stream()
@@ -56,15 +56,15 @@ public class RagService {
         log.info("[RagService] SESSION_CONTEXT_LEN={} sessionId={}",
                 sessionContext == null ? -1 : sessionContext.length(), sessionId);
 
-        // 4) 질문 임베딩
+        // 질문 임베딩
         List<Double> queryVector = llmService.embedding(question);
 
-        // 5) Top-K chunk 검색 (embedding_chunk가 비어있으면 여기서 0개)
+        // Top-K chunk 검색 (embedding_chunk가 비어있으면 여기서 0개)
         List<EmbeddingChunkDto.SearchResult> topChunks = similarityService.searchTopK(queryVector, TOP_K);
 
         log.info("[RagService] topChunks size={} sessionId={}", topChunks.size(), sessionId);
 
-        // 6) RAG context 만들기
+        // RAG context 만들기
         String ragContext = topChunks.stream()
             .map(EmbeddingChunkDto.SearchResult::getChunkText)
             .collect(Collectors.joining("\n\n"));
@@ -75,18 +75,16 @@ public class RagService {
             "\n\n=== [RAG 검색 참고자료] ===\n" +
             (ragContext == null || ragContext.isBlank() ? "(없음)" : ragContext);
 
-        // 7) LLM 호출
+        // LLM 호출
         String answer = llmService.chat(finalContext, question);
         
-          // (추가) RAG 결과 테이블 저장 (질문/답변 이력)
-          //      8) assistant 메시지 저장하기 전에/후에 넣어도 되지만,
-          //      보통 answer 생성 직후가 가장 깔끔함
-          ragRepository.save(new Rag(sessionId, question, answer));
+        // RAG 결과 테이블 저장 (질문/답변 이력)
+        ragRepository.save(new Rag(sessionId, question, answer));
 
-        // 8) 어시스턴트 메시지 저장
+        // 어시스턴트 메시지 저장
         ChatMessage assistantMsg = chatMessageService.saveMessage(memberId, sessionId, "ASSISTANT", answer);
 
-        // 9) chat_message_ref 저장(근거 연결) - try/catch로 안전화
+        // chat_message_ref 저장(근거 연결) - try/catch로 안전화
         Long assistantChatId = assistantMsg.getChatId();
 
         int ok = 0;

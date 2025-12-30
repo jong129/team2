@@ -7,8 +7,6 @@ import org.springframework.web.bind.annotation.*;
 
 import dev.jpa.team2.chatbot.AuthSessionUtil;
 import dev.jpa.team2.chatbot.session.ChatSessionDto;
-import dev.jpa.team2.chatbot.session.ChatSessionDto.GroupedByDate;
-import dev.jpa.team2.chatbot.session.ChatSessionDto.SearchResultItem;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,11 +29,11 @@ public class ChatMessageCont {
     ) {
         Long memberId = AuthSessionUtil.requireMemberId(httpSession);
 
-        // limit은 현재 적용 안 함(필요하면 Repo를 Pageable로 바꿔서 적용 가능)
+        // limit은 현재 적용 안 함(Repo를 Pageable로 바꿔서 적용 가능)
         return ResponseEntity.ok(messageService.loadSessionMessages(memberId, sessionId));
     }
 
-    // aibotpage: 키워드 검색 (날짜별 그룹)
+    // 키워드 검색 (날짜별 그룹)
     // GET /api/chat/messages/search?keyword=...&size=50
     @GetMapping("/messages/search")
     public ResponseEntity<List<ChatSessionDto.GroupedByDate<ChatSessionDto.SearchResultItem>>> search(

@@ -10,31 +10,23 @@ import lombok.*;
 @Builder
 public class ChatMessageRefDto {
 
-    // =========================
     // 공통 메타 정보
-    // =========================
     private String mode;        // "CHAT_REFS" | "STATS"
     private String scope;       // "MY" | "ALL" | null
 
-    // =========================
     // 특정 메시지(chatId)의 근거
-    // =========================
     private Long chatId;                    // 대상 메시지
     private Integer refCount;               // refs 개수
     private List<RefItem> refs;             // 근거 목록
 
-    // =========================
     // 품질 분석 통계
-    // =========================
     private Integer days;                   // 최근 N일
     private Long totalRefs;                 // 전체 ref 개수
     private Double avgScore;                // 평균 score
     private List<TopChunkStat> topChunks;   // 자주 쓰인 chunk
 
-    // ==================================================
-    // 내부 DTO들
-    // ==================================================
 
+    // 내부 DTO들
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor

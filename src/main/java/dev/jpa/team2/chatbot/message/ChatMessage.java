@@ -34,7 +34,7 @@ public class ChatMessage {
     @Column(name = "CREATED_AT", nullable = false)
     private LocalDateTime createdAt;
 
-    // 선택(나중에 분석/과금/성능로그)
+    // 선택(나중에 추가 가능 : 분석/과금/성능로그)
     @Column(name = "MODEL")
     private String model;
 

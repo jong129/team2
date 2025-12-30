@@ -25,8 +25,7 @@ public class EmbeddingChunkService {
 
     /**
      * text를 chunk로 쪼개서 embedding_chunk에 저장
-     * fileId 자리에 refId를 넣는 설계(가장 간단)
-     *
+     * fileId 자리에 refId를 넣는 설계
      * @return 저장 성공한 chunk 개수
      */
     public int saveChunksFromText(Long fileId, String text) {
@@ -39,8 +38,8 @@ public class EmbeddingChunkService {
             return 0;
         }
 
-        int chunkSize = 800;      // ✅ 한 chunk 길이(필요 시 조절)
-        int overlap = 80;         // ✅ 겹치기(문맥 유지)
+        int chunkSize = 800;      // 한 chunk 길이(필요 시 조절)
+        int overlap = 80;         // 겹치기(문맥 유지)
         List<String> chunks = splitWithOverlap(text.trim(), chunkSize, overlap);
 
         int ok = 0;
@@ -51,13 +50,13 @@ public class EmbeddingChunkService {
             if (chunkText.isEmpty()) continue;
 
             try {
-                // 1) embedding 생성
+                // embedding 생성
                 List<Double> vector = llmService.embedding(chunkText);
 
-                // 2) JSON 직렬화
+                // JSON 직렬화
                 String vectorJson = objectMapper.writeValueAsString(vector);
 
-                // 3) 저장
+                // 저장
                 EmbeddingChunk e = new EmbeddingChunk();
                 e.setFileId(fileId);
                 e.setChunkText(chunkText);
@@ -71,7 +70,7 @@ public class EmbeddingChunkService {
                 fail++;
                 log.error("[EmbeddingChunkService] save chunk failed | fileId={} idx={} chunkLen={}",
                         fileId, i, chunkText.length(), ex);
-                // ✅ 실패해도 다음 chunk 계속 진행
+                // 실패해도 다음 chunk 계속 진행
             }
         }
 

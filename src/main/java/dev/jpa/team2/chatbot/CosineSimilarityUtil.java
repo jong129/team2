@@ -5,9 +5,7 @@ import java.util.List;
 
 public class CosineSimilarityUtil {
 
-    /**
-     * "[0.1, 0.2, -0.3]" → List<Double>
-     */
+    /** "[0.1, 0.2, -0.3]" → List<Double> */
   public static List<Double> parseVector(String vectorString) {
     if (vectorString == null) return List.of();
 
@@ -26,9 +24,7 @@ public class CosineSimilarityUtil {
   }
 
 
-    /**
-     * cosine similarity 계산
-     */
+    /** cosine similarity 계산 */
     public static double cosineSimilarity(
             List<Double> v1,
             List<Double> v2) {

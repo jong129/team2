@@ -11,8 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 import dev.jpa.team2.chatbot.session.ChatSession;
 import dev.jpa.team2.chatbot.session.ChatSessionDto;
 import dev.jpa.team2.chatbot.session.ChatSessionService;
-import dev.jpa.team2.chatbot.session.ChatSessionDto.GroupedByDate;
-import dev.jpa.team2.chatbot.session.ChatSessionDto.SearchResultItem;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -54,7 +52,7 @@ public class ChatMessageService {
         return saved;
     }
 
-    // 키워드 검색 (날짜별 그룹)  -> 통합 DTO 기준!
+    // 키워드 검색 (날짜별 그룹) 
     @Transactional(readOnly = true)
     public List<ChatSessionDto.GroupedByDate<ChatSessionDto.SearchResultItem>> searchMyMessages(
         Long memberId, String keyword, int size

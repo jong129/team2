@@ -16,10 +16,8 @@ public class ChatMessageRefCont {
 
     private final ChatMessageRefService refService;
 
-    // ==================================================
     // 회원: 내 AI 답변 근거
     // GET /api/chat/messages/{chatId}/refs
-    // ==================================================
     @GetMapping("/messages/{chatId}/refs")
     public ResponseEntity<ChatMessageRefDto> myRefs(
         @PathVariable Long chatId,
@@ -46,10 +44,9 @@ public class ChatMessageRefCont {
         }
     }
 
-    // ==================================================
+
     // 관리자/디버그
     // GET /api/chat/admin/messages/{chatId}/refs
-    // ==================================================
     @GetMapping("/admin/messages/{chatId}/refs")
     public ResponseEntity<ChatMessageRefDto> adminRefs(
         @PathVariable Long chatId,
@@ -72,10 +69,9 @@ public class ChatMessageRefCont {
         }
     }
 
-    // ==================================================
-    // 품질 분석: 내 것
+
+    // 품질 분석: 회원
     // GET /api/chat/refs/stats/my?days=30&top=10
-    // ==================================================
     @GetMapping("/refs/stats/my")
     public ResponseEntity<ChatMessageRefDto> statsMy(
         @RequestParam(defaultValue = "30") int days,
@@ -92,10 +88,9 @@ public class ChatMessageRefCont {
         }
     }
 
-    // ==================================================
+
     // 품질 분석: 전체
     // GET /api/chat/refs/stats/all?days=30&top=10
-    // ==================================================
     @GetMapping("/refs/stats/all")
     public ResponseEntity<ChatMessageRefDto> statsAll(
         @RequestParam(defaultValue = "30") int days,

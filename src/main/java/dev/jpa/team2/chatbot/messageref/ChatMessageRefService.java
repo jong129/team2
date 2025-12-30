@@ -23,9 +23,7 @@ public class ChatMessageRefService {
     private final ChatMessageRepository messageRepo;
     private final ChatSessionService sessionService;
 
-    // ==================================================
     // 회원: 내 AI 답변(chatId)의 근거 조회
-    // ==================================================
     public ChatMessageRefDto getRefsForMyChat(Long memberId, Long chatId) {
 
         ChatMessage msg = messageRepo.findById(chatId)
@@ -53,9 +51,7 @@ public class ChatMessageRefService {
             .build();
     }
 
-    // ==================================================
     // 관리자/디버그: chatId 기준 근거 조회
-    // ==================================================
     public ChatMessageRefDto getRefsForAdmin(Long chatId) {
 
         List<ChatMessageRefDto.RefItem> refs =
@@ -76,23 +72,17 @@ public class ChatMessageRefService {
             .build();
     }
 
-    // ==================================================
-    // 품질 분석: 내 것
-    // ==================================================
+    // 품질 분석: 회원별
     public ChatMessageRefDto statsMy(Long memberId, int days, int top) {
         return statsInternal("MY", memberId, days, top);
     }
 
-    // ==================================================
     // 품질 분석: 전체
-    // ==================================================
     public ChatMessageRefDto statsAll(int days, int top) {
         return statsInternal("ALL", null, days, top);
     }
 
-    // ==================================================
     // 내부 공통 로직
-    // ==================================================
     private ChatMessageRefDto statsInternal(
         String scope,
         Long memberId,

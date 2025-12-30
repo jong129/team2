@@ -6,7 +6,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "RAG")
+@Table(name = "CHAT_RAG")
 @Getter
 @NoArgsConstructor
 @SequenceGenerator(
@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
     sequenceName = "SEQ_RAG_ID",
     allocationSize = 1
 )
-public class Rag {
+public class ChatRag {
 
     @Id
     @GeneratedValue(
@@ -38,7 +38,7 @@ public class Rag {
     @Column(name = "CREATED_AT")
     private LocalDateTime createdAt;
 
-    public Rag(Long sessionId, String question, String answer) {
+    public ChatRag(Long sessionId, String question, String answer) {
         this.sessionId = sessionId;
         this.question = question;
         this.answer = answer;

@@ -16,8 +16,8 @@ public class ChatDataRef {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_CHAT_DATA_REF_ID")
     @SequenceGenerator(name = "SEQ_CHAT_DATA_REF_ID", sequenceName = "SEQ_CHAT_DATA_REF_ID", allocationSize = 1)
-    @Column(name = "REF_ID")
-    private Long refId;
+    @Column(name = "DATA_REF_ID")
+    private Long dataRefId;
 
     @Column(name = "MEMBER_ID", nullable = false)
     private Long memberId;

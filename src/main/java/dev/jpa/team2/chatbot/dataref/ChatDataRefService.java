@@ -39,12 +39,12 @@ public class ChatDataRefService {
 
         // ref 저장 직후, embedding_chunk 자동 생성
         try {
-            int inserted = embeddingChunkService.saveChunksFromText(saved.getRefId(), saved.getSummary());
+            int inserted = embeddingChunkService.saveChunksFromText(saved.getDataRefId(), saved.getSummary());
             log.info("[ChatDataRefService] embedding chunks inserted={} | refId={} | sessionId={}",
-                    inserted, saved.getRefId(), session.getSessionId());
+                    inserted, saved.getDataRefId(), session.getSessionId());
         } catch (Exception e) {
             // 실패해도 ref 자체는 저장된 상태 유지 (서비스 전체가 죽지 않게)
-            log.error("[ChatDataRefService] embedding chunk generation failed | refId={}", saved.getRefId(), e);
+            log.error("[ChatDataRefService] embedding chunk generation failed | refId={}", saved.getDataRefId(), e);
         }
 
         // lastMessageAt 갱신
@@ -54,7 +54,7 @@ public class ChatDataRefService {
         return ChatDataRefDto.Response.builder()
             .success(true)
             .sessionId(session.getSessionId())
-            .refId(saved.getRefId())
+            .refId(saved.getDataRefId())
             .build();
     }
 

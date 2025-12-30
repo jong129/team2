@@ -15,8 +15,8 @@ public class ChatMessageRef {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_CHAT_MESSAGE_REF_ID")
     @SequenceGenerator(name = "SEQ_CHAT_MESSAGE_REF_ID", sequenceName = "SEQ_CHAT_MESSAGE_REF_ID", allocationSize = 1)
-    @Column(name = "REF_ID")
-    private Long refId;
+    @Column(name = "MESSAGE_REF_ID")
+    private Long messageRefId;
 
     @Column(name="CHAT_ID", nullable = false)
     private Long chatId;  // AI 답변 메시지 ID

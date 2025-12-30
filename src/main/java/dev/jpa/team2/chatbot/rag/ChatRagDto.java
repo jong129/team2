@@ -9,7 +9,7 @@ import dev.jpa.team2.chatbot.embeddingchunk.EmbeddingChunkDto;
 
 @Getter
 @Setter
-public class RagDto {
+public class ChatRagDto {
 
     // ===== 요청 =====
     private Long sessionId;

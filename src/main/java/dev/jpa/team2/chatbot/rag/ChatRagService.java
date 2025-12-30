@@ -21,13 +21,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class RagService {
+public class ChatRagService {
 
     private final ChatSessionService chatSessionService;
     private final ChatMessageService chatMessageService;
     private final ChatDataRefRepository chatDataRefRepository;
     private final ChatMessageRefRepository chatMessageRefRepository;
-    private final RagRepository ragRepository;
+    private final ChatRagRepository ragRepository;
 
     private final FastApiLlmService llmService;
     private final EmbeddingSimilarityService similarityService;
@@ -35,7 +35,7 @@ public class RagService {
     private static final int TOP_K = 5;
 
     @Transactional
-    public RagDto ask(RagDto dto, Long memberId) {
+    public ChatRagDto ask(ChatRagDto dto, Long memberId) {
 
         Long sessionId = dto.getSessionId();
         String question = dto.getQuestion();
@@ -79,7 +79,7 @@ public class RagService {
         String answer = llmService.chat(finalContext, question);
         
         // RAG 결과 테이블 저장 (질문/답변 이력)
-        ragRepository.save(new Rag(sessionId, question, answer));
+        ragRepository.save(new ChatRag(sessionId, question, answer));
 
         // 어시스턴트 메시지 저장
         ChatMessage assistantMsg = chatMessageService.saveMessage(memberId, sessionId, "ASSISTANT", answer);

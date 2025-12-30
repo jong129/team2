@@ -9,13 +9,13 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/rag")
 @RequiredArgsConstructor
-public class RagCont {
+public class ChatRagCont {
 
-    private final RagService ragService;
+    private final ChatRagService ragService;
 
     // 질문 -> RAG 답변 생성 + (USER/AI 메시지 저장 + refs 저장)
     @PostMapping("/ask")
-    public RagDto ask(@RequestBody RagDto dto, HttpSession session) {
+    public ChatRagDto ask(@RequestBody ChatRagDto dto, HttpSession session) {
         Long memberId = AuthSessionUtil.requireMemberId(session);
         return ragService.ask(dto, memberId);
     }

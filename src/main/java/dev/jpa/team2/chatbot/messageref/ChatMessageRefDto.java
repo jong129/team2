@@ -32,7 +32,7 @@ public class ChatMessageRefDto {
     @AllArgsConstructor
     @Builder
     public static class RefItem {
-        private Long refId;
+        private Long messageRefId;
         private Long chatId;
         private Long chunkId;
         private Double score;
@@ -40,7 +40,7 @@ public class ChatMessageRefDto {
 
         public static RefItem from(ChatMessageRef e) {
             return RefItem.builder()
-                .refId(e.getRefId())
+                .messageRefId(e.getMessageRefId())
                 .chatId(e.getChatId())
                 .chunkId(e.getChunkId())
                 .score(e.getScore())

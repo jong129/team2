@@ -6,7 +6,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "RAG_RESULT")
+@Table(name = "RAG")
 @Getter
 @NoArgsConstructor
 @SequenceGenerator(

@@ -24,7 +24,8 @@ public class EmbeddingChunkDto {
     @Builder
     public static class CreateResponse {
         private boolean success;
-        private Long chunkId;
+        private Long fileId;
+        private int inserted;
     }
 
     // =========================

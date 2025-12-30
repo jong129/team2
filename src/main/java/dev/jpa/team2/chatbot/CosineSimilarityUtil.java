@@ -1,4 +1,4 @@
-package dev.jpa.team2.chatbot.embeddingchunk;
+package dev.jpa.team2.chatbot;
 
 import java.util.ArrayList;
 import java.util.List;

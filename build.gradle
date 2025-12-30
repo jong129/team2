@@ -44,6 +44,7 @@ dependencies {
   // https://mvnrepository.com/artifact/commons-fileupload/commons-fileupload
   implementation 'commons-fileupload:commons-fileupload:1.5'  
   implementation 'org.springframework.boot:spring-boot-starter-mail'
+  implementation 'org.springframework.boot:spring-boot-starter-security'
 }
 
 tasks.named('test') {

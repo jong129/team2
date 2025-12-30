@@ -95,7 +95,7 @@ public class Member {
     this.emailVerified = "N";
     this.failedLoginCount = 0;
     this.createdAt = now;   // 생성 시각
-    this.updatedAt = now;   // 수정 시각도 같이
+    this.updatedAt = now;   // 수정 시각
     
   }
   
@@ -103,7 +103,7 @@ public class Member {
   테스트 / 내부용 생성자
   =============================== */
   public Member(Long memberId, String loginId, String email, String password, String name) {
-    // memberId는 직접 세팅하지 않는 것이 원칙
+    
     this.loginId = loginId;
     this.email = email;
     this.password = password;

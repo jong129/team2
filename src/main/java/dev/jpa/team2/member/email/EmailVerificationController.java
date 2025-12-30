@@ -44,17 +44,25 @@ public class EmailVerificationController {
     /* ==================================================
        2️⃣ 비밀번호 재설정용 인증번호 발송
        POST /email/password/send
-       body: { "email": "user@gmail.com" }
+       body: { "loginId": "test1", "email": "user@gmail.com" }
     ================================================== */
     @PostMapping("/password/send")
     public ResponseEntity<Map<String, Object>> sendForPasswordReset(
             @RequestBody Map<String, String> body) {
 
-        String email = body.get("email");
+        String loginId = body.get("loginId");
+        String email   = body.get("email");
+
         Map<String, Object> result = new HashMap<>();
 
+        if (loginId == null || email == null) {
+            result.put("success", false);
+            result.put("message", "아이디와 이메일을 모두 입력해야 합니다.");
+            return ResponseEntity.badRequest().body(result);
+        }
+
         try {
-            emailVerificationService.createForPasswordReset(email);
+            emailVerificationService.createForPasswordReset(loginId, email);
             result.put("success", true);
             result.put("message", "비밀번호 재설정 인증번호가 이메일로 발송되었습니다.");
         } catch (Exception e) {
@@ -75,7 +83,7 @@ public class EmailVerificationController {
             @RequestBody Map<String, String> body) {
 
         String email = body.get("email");
-        String code = body.get("code");
+        String code  = body.get("code");
 
         Map<String, Object> result = new HashMap<>();
 

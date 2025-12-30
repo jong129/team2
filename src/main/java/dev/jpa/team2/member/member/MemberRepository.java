@@ -42,7 +42,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
   public Member findByMemberId(Long memberId);
 
   /** 로그인 ID 조회 */
-  public Member findByLoginId(String loginId);
+  Optional<Member> findByLoginId(String loginId);
 
   /** 이메일 조회 */
   public Member findByEmail(String email);

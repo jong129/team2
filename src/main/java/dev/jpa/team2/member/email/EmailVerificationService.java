@@ -8,19 +8,26 @@ import java.util.Random;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import dev.jpa.team2.member.member.Member;
+import dev.jpa.team2.member.member.MemberRepository;
+
 @Service
 @Transactional
 public class EmailVerificationService {
 
     private final EmailVerificationRepository emailVerificationRepository;
     private final EmailSendService emailSendService;
+    private final MemberRepository memberRepository;
 
+    // 🔥 생성자 주입 (반드시 3개)
     public EmailVerificationService(
             EmailVerificationRepository emailVerificationRepository,
-            EmailSendService emailSendService) {
+            EmailSendService emailSendService,
+            MemberRepository memberRepository) {
 
         this.emailVerificationRepository = emailVerificationRepository;
         this.emailSendService = emailSendService;
+        this.memberRepository = memberRepository;
     }
 
     /* ===============================
@@ -28,12 +35,12 @@ public class EmailVerificationService {
     =============================== */
     private String generateVerifyCode() {
         Random random = new Random();
-        int code = 100000 + random.nextInt(900000); // 6자리
+        int code = 100000 + random.nextInt(900000);
         return String.valueOf(code);
     }
 
     /* ===============================
-       2) 만료 시간 계산 (현재 + 5분)
+       2) 만료 시간 계산 (5분)
     =============================== */
     private Date createExpireAt() {
         Calendar cal = Calendar.getInstance();
@@ -42,8 +49,7 @@ public class EmailVerificationService {
     }
 
     /* ===============================
-       3-A) 회원가입용 인증 요청
-       - 이미 인증된 이메일이면 예외
+       3-A) 회원가입용 인증
     =============================== */
     public void createForSignup(String email) {
 
@@ -55,30 +61,32 @@ public class EmailVerificationService {
         }
 
         EmailVerification ev = createOrUpdateInternal(email);
-
-        // 🔥 회원가입용 메일 발송
         emailSendService.sendVerificationMail(email, ev.getVerifyCode());
     }
 
     /* ===============================
-       3-B) 비밀번호 재설정용 인증 요청
-       - 이미 인증된 이메일이어도 재발급 허용
+       3-B) 비밀번호 재설정용 인증
+       🔥 핵심 수정 부분
     =============================== */
-    public void createForPasswordReset(String email) {
+    public void createForPasswordReset(String loginId, String email) {
 
-        EmailVerification ev = createOrUpdateInternal(email);
+      Optional<Member> memberOpt =
+              memberRepository.findByLoginIdAndEmail(loginId, email);
 
-        // 🔥 비밀번호 재설정용 메일 발송
-        emailSendService.sendPasswordResetVerificationMail(
-                email,
-                ev.getVerifyCode()
-        );
-    }
+      if (memberOpt.isEmpty()) {
+          throw new IllegalStateException("아이디와 이메일이 일치하지 않습니다.");
+      }
 
+      EmailVerification ev =
+              createOrUpdateForPasswordReset(loginId, email);
+
+      emailSendService.sendPasswordResetVerificationMail(
+              email,
+              ev.getVerifyCode()
+      );
+  }
     /* ===============================
-       3-C) 내부 공통 로직
-       - DB 처리만 담당
-       - 메일 발송 ❌
+       3-C) 내부 공통 로직 (DB 전용)
     =============================== */
     private EmailVerification createOrUpdateInternal(String email) {
 
@@ -92,7 +100,7 @@ public class EmailVerificationService {
         if (optional.isPresent()) {
             ev = optional.get();
             ev.updateCode(code, expiresAt);
-            ev.resetVerified(); // 인증 상태 초기화
+            ev.resetVerified();
         } else {
             ev = new EmailVerification(email, code, expiresAt);
         }
@@ -101,6 +109,19 @@ public class EmailVerificationService {
         return ev;
     }
 
+    /* ===============================
+    3-D) 비밀번호 재설정용 내부 로직
+ =============================== */
+ private EmailVerification createOrUpdateForPasswordReset(
+         String loginId,
+         String email
+ ) {
+     EmailVerification ev = createOrUpdateInternal(email);
+     ev.setLoginId(loginId);
+     emailVerificationRepository.save(ev);
+     return ev;
+ }
+ 
     /* ===============================
        4) 인증번호 검증
     =============================== */
@@ -122,9 +143,10 @@ public class EmailVerificationService {
     }
 
     /* ===============================
-       5) 인증 완료 여부 확인 (회원가입용)
+       5) 인증 여부 확인 (회원가입)
     =============================== */
     public boolean isVerified(String email) {
         return emailVerificationRepository.existsByEmailAndVerifiedYn(email, "Y");
     }
 }
+

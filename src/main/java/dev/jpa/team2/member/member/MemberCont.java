@@ -33,7 +33,6 @@ public class MemberCont {
 
   /**
    * 회원 등록
-   * http://localhost:9100/member/save
    */
   @PostMapping(path = "/save")
   public ResponseEntity<Map<String, Object>> save(
@@ -55,7 +54,6 @@ public class MemberCont {
 
   /**
    * 로그인 ID 중복 검사
-   * http://localhost:9100/member/check_login_id?loginId=user1
    */
   @GetMapping(path = "/check_login_id")
   public ResponseEntity<Integer> checkLoginId(
@@ -67,7 +65,6 @@ public class MemberCont {
 
   /**
    * 전체 목록
-   * http://localhost:9100/member/find_all
    */
   @GetMapping(path = "/find_all")
   public ResponseEntity<List<Member>> findAll() {
@@ -76,7 +73,6 @@ public class MemberCont {
 
   /**
    * 회원 조회
-   * http://localhost:9100/member/read/3
    */
   @GetMapping(path = "/read/{memberId}")
   public ResponseEntity<Member> findByMemberId(
@@ -88,7 +84,6 @@ public class MemberCont {
 
   /**
    * 회원 정보 수정
-   * http://localhost:9100/member/update
    */
   @PutMapping(path = "/update")
   public ResponseEntity<Integer> update(@RequestBody MemberDTO memberDTO) {
@@ -98,7 +93,6 @@ public class MemberCont {
 
   /**
    * 비밀번호 변경
-   * http://localhost:9100/member/update_password
    */
   @PostMapping(path = "/update_password")
   public ResponseEntity<Integer> updatePassword(@RequestBody MemberDTO memberDTO) {
@@ -113,7 +107,6 @@ public class MemberCont {
 
   /**
    * 회원 삭제
-   * http://localhost:9100/member/delete/3
    */
   @DeleteMapping(path = "/delete/{memberId}")
   public ResponseEntity<Integer> delete(
@@ -134,7 +127,6 @@ public class MemberCont {
 
   /**
    * 로그인
-   * http://localhost:9100/member/login?loginInput=user1&password=1234
    */
   @PostMapping(path = "/login")
   public ResponseEntity<Map<String, Object>> login(
@@ -177,7 +169,6 @@ public class MemberCont {
 
   /**
    * 아이디 찾기
-   * http://localhost:9100/member/find_id
    */
   @PostMapping(path = "/find_id")
   public ResponseEntity<Map<String, Object>> findId(
@@ -202,7 +193,6 @@ public class MemberCont {
   }
   /**
    * 이름 또는 이메일 검색
-   * http://localhost:9100/member/search?keyword=홍길동
    */
   @GetMapping(path = "/search")
   public ResponseEntity<List<Member>> search(

@@ -5,24 +5,58 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 사전 체크리스트(PRE) 조회 API
- *
- * 프론트(React)에서 이 API만 호출해도
- * "현재 ACTIVE인 사전 체크리스트"를 화면에 뿌릴 수 있음.
+ * * 사전 체크리스트(PRE) 조회 API * * 프론트(React)에서 이 API만 호출해도 "현재 ACTIVE인 사전 체크리스트"를
+ * 화면에 뿌릴 수 있음.
  */
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/checklists/pre")
 public class PreChecklistCont {
+  private final PreChecklistService preChecklistService;
 
-    private final PreChecklistService preChecklistService;
+  /** * 현재 사용 중인(ACTIVE) 사전 체크리스트 조회 GET checklists/pre/active */
+  @GetMapping("/active")
+  public ResponseEntity<PreChecklistDTO.PreChecklistRes> getActivePreChecklist() {
+    return ResponseEntity.ok(preChecklistService.getActivePreChecklist());
+  }
 
-    /**
-     * 현재 사용 중인(ACTIVE) 사전 체크리스트 조회
-     * GET checklists/pre/active
-     */
-    @GetMapping("/active")
-    public ResponseEntity<PreChecklistDTO.PreChecklistRes> getActivePreChecklist() {
-        return ResponseEntity.ok(preChecklistService.getActivePreChecklist());
-    }
+  /**
+   * (B-1) 사전 체크리스트 진행 세션 시작 - 진행중 세션이 있으면 그 세션을 반환 - 없으면 새로 생성해서 반환
+   *
+   * POST /checklists/pre/session/start?memberId=1
+   */
+  @PostMapping("/session/start")
+  public ResponseEntity<PreChecklistDTO.SessionRes> startSession(@RequestParam("memberId") Long memberId) {
+    return ResponseEntity.ok(preChecklistService.startOrGetSession(memberId));
+  }
+
+  /**
+   * (C) 체크리스트 항목 체크 상태 저장
+   *
+   * PATCH /checklists/pre/session/{sessionId}/items/{itemId}
+   * body: { "checkStatus": "DONE" }
+   */
+  @PatchMapping("/session/{sessionId}/items/{itemId}")
+  public ResponseEntity<Void> updateItemStatus(
+      @PathVariable("sessionId") Long sessionId,
+      @PathVariable("itemId") Long itemId,
+      @RequestBody PreChecklistDTO.UpdateItemReq req
+  ) {
+    preChecklistService.updateItemStatus(sessionId, itemId, req);
+    return ResponseEntity.ok().build();
+  }
+  
+  /**
+   * (D) 세션 요약/경고
+   * GET /checklists/pre/session/{sessionId}/summary
+   */
+  @GetMapping("/session/{sessionId}/summary")
+  public ResponseEntity<PreChecklistDTO.SummaryRes> getSummary(
+      @PathVariable("sessionId") Long sessionId
+  ) {
+    return ResponseEntity.ok(preChecklistService.getSummary(sessionId));
+  }
+
+
 }

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import dev.jpa.team2.member.email.EmailVerificationService;
@@ -12,6 +13,9 @@ import dev.jpa.team2.member.email.EmailVerificationService;
 @Transactional
 public class MemberService {
 
+  @Autowired
+  private PasswordEncoder passwordEncoder;
+  
   @Autowired
   MemberRepository memberRepository;
 
@@ -66,7 +70,9 @@ public class MemberService {
     }
 
     // 회원 저장
-    Member savedEntity = memberRepository.save(memberDTO.toEntity());
+    Member entity = memberDTO.toEntity();
+    entity.setPassword(passwordEncoder.encode(entity.getPassword()));
+    Member savedEntity = memberRepository.save(entity);
     System.out.println("-> memberId: " + savedEntity.getMemberId());
     return savedEntity;
   }
@@ -154,7 +160,8 @@ public class MemberService {
    * ================================================== */
 
   public int updatePassword(Long memberId, String password) {
-    int cnt = memberRepository.updatePassword(memberId, password);
+    String encoded = passwordEncoder.encode(password);
+    int cnt = memberRepository.updatePassword(memberId, encoded);
     System.out.println("-> MemberService updatePassword cnt: " + cnt);
     return cnt;
   }

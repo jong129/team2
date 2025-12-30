@@ -38,7 +38,7 @@ public class PasswordResetService {
     }
 
     /**
-     * 1️⃣ 이메일 인증 성공 후
+     * 이메일 인증 성공 후
      * - PasswordReset 토큰 발급
      */
     public String createResetToken(String loginId, String email) {
@@ -66,7 +66,7 @@ public class PasswordResetService {
     }
 
     /**
-     * 2️⃣ 비밀번호 변경
+     * 비밀번호 변경
      */
     public void resetPassword(
             String resetCode,

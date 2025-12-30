@@ -1,5 +1,7 @@
 package dev.jpa.team2.member.repassword;
 
+import java.util.Map;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,5 +28,21 @@ public class PasswordResetController {
         );
 
         return ResponseEntity.ok("비밀번호가 변경되었습니다.");
+    }
+    
+    @PostMapping("/token")
+    public ResponseEntity<?> issueToken(@RequestBody PasswordResetRequestDTO dto) {
+        String resetCode =
+                passwordResetService.createResetToken(
+                        dto.getLoginId(),
+                        dto.getEmail()
+                );
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "success", true,
+                        "resetCode", resetCode
+                )
+        );
     }
 }

@@ -1,4 +1,4 @@
-package dev.jpa.team2.member.member;
+  package dev.jpa.team2.member.member;
 
 import java.util.Date;
 

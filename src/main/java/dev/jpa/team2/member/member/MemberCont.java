@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,7 +24,10 @@ import jakarta.servlet.http.HttpSession;
 @RestController
 @RequestMapping("/member")
 public class MemberCont {
-
+  
+  @Autowired
+  private PasswordEncoder passwordEncoder;
+  
   @Autowired
   private MemberService memberService;
 
@@ -143,11 +147,11 @@ public class MemberCont {
       return ResponseEntity.ok(map);
     }
 
-    if (!member.getPassword().equals(password)) {
+    if (!passwordEncoder.matches(password, member.getPassword())) {
       memberService.loginFail(member.getMemberId());
       map.put("cnt", 2); // 비밀번호 불일치
       return ResponseEntity.ok(map);
-    }
+  }
 
     if ("LOCKED".equals(member.getStatus())) {
       map.put("cnt", 3); // 계정 잠금

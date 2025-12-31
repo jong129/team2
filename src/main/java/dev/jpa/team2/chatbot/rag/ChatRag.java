@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 @SequenceGenerator(
-    name = "RAG_SEQ_GEN",
-    sequenceName = "SEQ_RAG_ID",
+    name = "CHAT_RAG_SEQ",
+    sequenceName = "SEQ_CHAT_RAG_ID",
     allocationSize = 1
 )
 public class ChatRag {
@@ -19,7 +19,7 @@ public class ChatRag {
     @Id
     @GeneratedValue(
         strategy = GenerationType.SEQUENCE,
-        generator = "RAG_SEQ_GEN"
+        generator = "CHAT_RAG_SEQ"
     )
     @Column(name = "RAG_ID")
     private Long ragId;

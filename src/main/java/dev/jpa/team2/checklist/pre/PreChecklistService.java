@@ -1,5 +1,7 @@
 package dev.jpa.team2.checklist.pre;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -36,59 +38,82 @@ public class PreChecklistService {
 
   /**
    * 현재 사용 중인(ACTIVE) 사전 체크리스트 조회
-   *
-   * @return 사전 체크리스트 응답 DTO
    */
   public PreChecklistDTO.PreChecklistRes getActivePreChecklist() {
 
-    // 1️. 사전(PRE) + 사용중(ACTIVE) 템플릿 1개 조회
     ChecklistTemplate template = templateRepo
         .findFirstByPhaseAndStatusOrderByVersionNoDesc(Phase.PRE, TemplateStatus.ACTIVE)
         .orElseThrow(() -> new IllegalStateException("ACTIVE 상태의 사전 체크리스트 템플릿이 없습니다. 초기 데이터 확인 필요"));
 
-    // 2️. 해당 템플릿에 속한 체크 항목들을 순서대로 조회
     var items = itemRepo.findByTemplate_TemplateIdAndActiveYnOrderByItemOrderAsc(template.getTemplateId(), "Y").stream()
         .map(item -> PreChecklistDTO.ItemRes.builder().itemId(item.getItemId()).itemOrder(item.getItemOrder())
             .checkArea(item.getCheckArea()).title(item.getTitle()).description(item.getDescription()).build())
         .collect(Collectors.toList());
 
-    // 3. 최종 응답 DTO 생성
     return PreChecklistDTO.PreChecklistRes.builder().templateId(template.getTemplateId())
         .templateName(template.getTemplateName()).items(items).build();
   }
 
+  // =========================================================
+  // ✅ 정책 반영: "사전 체크 시작"은 무조건 새 체크리스트 생성
+  // ✅ "이어서 하기"는 진행중 세션이 있을 때만 이어서
+  // =========================================================
+
   /**
-   * (B-1) 사전 체크리스트 진행 세션 시작 - 진행중 세션이 있으면 재사용 - 없으면 새로 생성
+   * (B-START) 사전 체크리스트 "새로 시작" (무조건 새 세션 생성) - 정책: 사전 체크 시작 = 새 체크리스트 생성
    */
-  public PreChecklistDTO.SessionRes startOrGetSession(Long memberId) {
+  @Transactional
+  public PreChecklistDTO.SessionRes createNewSession(Long memberId) {
 
     ChecklistTemplate template = templateRepo
         .findFirstByPhaseAndStatusOrderByVersionNoDesc(Phase.PRE, TemplateStatus.ACTIVE)
         .orElseThrow(() -> new IllegalStateException("ACTIVE 상태의 사전 체크리스트 템플릿이 없습니다."));
 
-    var existing = sessionRepo.findFirstByMemberIdAndPhaseAndStatus(memberId, Phase.PRE, "IN_PROGRESS");
-
-    if (existing.isPresent()) {
-      ChecklistSession session = existing.get();
-
-      // ✅ 진행 데이터(체크 응답) 존재 여부
-      boolean hasProgress = responseRepo.existsBySession_SessionId(session.getSessionId());
-
-      return PreChecklistDTO.SessionRes.builder().sessionId(session.getSessionId())
-          .templateId(session.getTemplate().getTemplateId()).status(session.getStatus()).reused(true) // ✅ 재사용
-          .hasProgress(hasProgress) // ✅ 진행 데이터 여부
-          .build();
-    }
-
-    ChecklistSession newSession = ChecklistSession.builder().memberId(memberId).phase(Phase.PRE).template(template)
-        .status("IN_PROGRESS").build();
+    ChecklistSession newSession = ChecklistSession.builder()
+        .memberId(memberId)
+        .phase(Phase.PRE)
+        .template(template)
+        .status("IN_PROGRESS")
+        .deletedYn("N")          // ✅ NOT NULL 컬럼 직접 세팅
+        .build();
 
     ChecklistSession saved = sessionRepo.save(newSession);
 
     return PreChecklistDTO.SessionRes.builder().sessionId(saved.getSessionId()).templateId(template.getTemplateId())
         .status(saved.getStatus()).reused(false) // ✅ 새로 생성
-        .hasProgress(false) // ✅ 새 세션이면 진행데이터 없음
+        .hasProgress(false) // ✅ 새 세션이므로 진행데이터 없음
         .build();
+  }
+
+  /**
+   * (B-CONTINUE) 사전 체크리스트 "이어서 하기" - 진행중(IN_PROGRESS) + 삭제아님(DELETED_YN='N') 세션이
+   * 있으면 반환 - 없으면 "없음" 응답
+   */
+  public PreChecklistDTO.SessionRes continueSession(Long memberId) {
+
+    var existing = sessionRepo.findFirstByMemberIdAndPhaseAndStatusAndDeletedYn(memberId, Phase.PRE, "IN_PROGRESS",
+        "N");
+
+    if (existing.isEmpty()) {
+      return PreChecklistDTO.SessionRes.builder().sessionId(null).templateId(null).status("NONE").reused(false)
+          .hasProgress(false).build();
+    }
+
+    ChecklistSession session = existing.get();
+
+    boolean hasProgress = responseRepo.existsBySession_SessionId(session.getSessionId());
+
+    return PreChecklistDTO.SessionRes.builder().sessionId(session.getSessionId())
+        .templateId(session.getTemplate().getTemplateId()).status(session.getStatus()).reused(true)
+        .hasProgress(hasProgress).build();
+  }
+
+  /**
+   * (호환용) 기존 API를 계속 쓰는 프론트가 있을 수 있어서 남김 - 기존 startOrGetSession은 "이어하기" 성격으로만
+   * 동작하도록 변경 - 새로 시작은 createNewSession()을 호출해야 함
+   */
+  public PreChecklistDTO.SessionRes startOrGetSession(Long memberId) {
+    return continueSession(memberId);
   }
 
   /**
@@ -96,21 +121,17 @@ public class PreChecklistService {
    */
   public void updateItemStatus(Long sessionId, Long itemId, PreChecklistDTO.UpdateItemReq req) {
 
-    // 1) 세션 존재 확인
     ChecklistSession session = sessionRepo.findById(sessionId)
         .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 sessionId=" + sessionId));
 
-    // 2) 항목 존재 확인
     ChecklistItem item = itemRepo.findById(itemId)
         .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 itemId=" + itemId));
 
-    // 3) 상태값 검증(최소)
     String status = req.getCheckStatus();
     if (!"DONE".equals(status) && !"NOT_DONE".equals(status) && !"NOT_REQUIRED".equals(status)) {
       throw new IllegalArgumentException("checkStatus 값이 올바르지 않습니다: " + status);
     }
 
-    // 4) (sessionId, itemId)로 기존 응답 조회 → 있으면 업데이트 / 없으면 생성
     ChecklistResponse response = responseRepo.findBySession_SessionIdAndItem_ItemId(sessionId, itemId)
         .orElseGet(() -> ChecklistResponse.builder().session(session).item(item).build());
 
@@ -123,19 +144,14 @@ public class PreChecklistService {
    */
   public PreChecklistDTO.SummaryRes getSummary(Long sessionId) {
 
-    // 1) 세션 조회 (templateId 얻기 위해)
     ChecklistSession session = sessionRepo.findById(sessionId)
         .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 sessionId=" + sessionId));
 
     Long templateId = session.getTemplate().getTemplateId();
 
-    // 2) 템플릿의 전체 아이템 조회(활성만)
     var items = itemRepo.findByTemplate_TemplateIdAndActiveYnOrderByItemOrderAsc(templateId, "Y");
-
-    // 3) 해당 세션의 응답 조회
     var responses = responseRepo.findBySession_SessionId(sessionId);
 
-    // 빠른 조회용 map
     java.util.Map<Long, String> statusMap = new java.util.HashMap<>();
     for (var r : responses) {
       statusMap.put(r.getItem().getItemId(), r.getCheckStatus());
@@ -151,18 +167,13 @@ public class PreChecklistService {
       if ("DONE".equals(st))
         done++;
 
-      // requiredYn == "Y" 이고 DONE이 아니면 미완료로 판단
-      if ("Y".equals(item.getRequiredYn())) {
-        if (!"DONE".equals(st)) {
-          requiredNotDone
-              .add(PreChecklistDTO.WarnItem.builder().itemId(item.getItemId()).title(item.getTitle()).build());
-        }
+      if ("Y".equals(item.getRequiredYn()) && !"DONE".equals(st)) {
+        requiredNotDone.add(PreChecklistDTO.WarnItem.builder().itemId(item.getItemId()).title(item.getTitle()).build());
       }
     }
 
     int requiredNotDoneCount = requiredNotDone.size();
 
-    // 4) 레벨/메시지 규칙(간단 버전)
     String level;
     String message;
     if (requiredNotDoneCount == 0) {
@@ -187,11 +198,8 @@ public class PreChecklistService {
   @Transactional
   public void resetSession(Long sessionId) {
 
-    // 1) 세션 존재 확인
-    ChecklistSession session = sessionRepo.findById(sessionId)
-        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 sessionId=" + sessionId));
+    sessionRepo.findById(sessionId).orElseThrow(() -> new IllegalArgumentException("존재하지 않는 sessionId=" + sessionId));
 
-    // 2) 해당 세션의 응답을 전부 NOT_DONE으로 bulk update
     responseRepo.resetAllToNotDone(sessionId);
   }
 
@@ -200,15 +208,90 @@ public class PreChecklistService {
    */
   public java.util.List<PreChecklistDTO.ItemStatusRes> getItemStatuses(Long sessionId) {
 
-    // 1) 세션 존재 확인
     sessionRepo.findById(sessionId).orElseThrow(() -> new IllegalArgumentException("존재하지 않는 sessionId=" + sessionId));
 
-    // 2) 해당 세션의 응답 조회
     var responses = responseRepo.findBySession_SessionId(sessionId);
 
-    // 3) itemId + checkStatus 형태로 변환하여 반환
     return responses.stream().map(r -> PreChecklistDTO.ItemStatusRes.builder().itemId(r.getItem().getItemId())
-        .checkStatus(r.getCheckStatus()).build()).collect(java.util.stream.Collectors.toList());
+        .checkStatus(r.getCheckStatus()).build()).collect(Collectors.toList());
   }
 
+  // =========================================================
+  // ✅ 기록보기 / 삭제 / 완료 처리
+  // =========================================================
+
+  /**
+   * (H) 기록보기: 내 사전(PRE) 체크리스트 세션 목록 - 삭제되지 않은(N) 것만 - 최신 startedAt DESC
+   */
+  public List<PreChecklistDTO.SessionHistoryItem> getPreHistory(Long memberId) {
+
+    List<ChecklistSession> sessions =
+        sessionRepo.findByMemberIdAndPhaseAndDeletedYnOrderByStartedAtDesc(
+            memberId, Phase.PRE, "N"
+        );
+
+    return sessions.stream()
+        .<PreChecklistDTO.SessionHistoryItem>map(s -> PreChecklistDTO.SessionHistoryItem.builder()
+            .sessionId(s.getSessionId())
+            .templateId(s.getTemplate().getTemplateId())
+            .templateName(s.getTemplate().getTemplateName())
+            .status(s.getStatus())
+            .startedAt(s.getStartedAt())
+            .completedAt(s.getCompletedAt())
+            .build()
+        )
+        .toList();
+}
+
+  /**
+   * (I) 소프트 삭제: 세션 삭제 처리 - 본인 세션만 삭제 가능 - DELETED_YN='Y', DELETED_AT=SYSDATE(=new
+   * Date())
+   */
+  @Transactional
+  public void softDeleteSession(Long memberId, Long sessionId) {
+
+    ChecklistSession session = sessionRepo.findById(sessionId)
+        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 sessionId=" + sessionId));
+
+    if (!session.getMemberId().equals(memberId)) {
+      throw new IllegalArgumentException("본인 세션만 삭제할 수 있습니다.");
+    }
+
+    if ("Y".equals(session.getDeletedYn())) {
+      return; // 이미 삭제된 경우는 그냥 종료(원하면 예외로 바꿔도 됨)
+    }
+
+    session.setDeletedYn("Y");
+    session.setDeletedAt(new java.util.Date());
+
+    sessionRepo.save(session);
+  }
+
+  /**
+   * (J) 완료 처리: 진행중 세션을 COMPLETED로 변경 - 본인 세션만 완료 가능 - 삭제된 세션은 완료 불가
+   */
+  @Transactional
+  public void completeSession(Long memberId, Long sessionId) {
+
+    ChecklistSession session = sessionRepo.findById(sessionId)
+        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 sessionId=" + sessionId));
+
+    if (!session.getMemberId().equals(memberId)) {
+      throw new IllegalArgumentException("본인 세션만 완료 처리할 수 있습니다.");
+    }
+
+    if ("Y".equals(session.getDeletedYn())) {
+      throw new IllegalArgumentException("삭제된 세션은 완료 처리할 수 없습니다.");
+    }
+
+    // 이미 완료면 그대로 종료(원하면 예외로)
+    if ("COMPLETED".equals(session.getStatus())) {
+      return;
+    }
+
+    session.setStatus("COMPLETED");
+    session.setCompletedAt(LocalDateTime.now());
+
+    sessionRepo.save(session);
+  }
 }

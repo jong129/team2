@@ -1,11 +1,20 @@
 package dev.jpa.team2.checklist.pre;
 
-import lombok.RequiredArgsConstructor;
-
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import lombok.RequiredArgsConstructor;
+
 
 /**
  * * 사전 체크리스트(PRE) 조회 API * * 프론트(React)에서 이 API만 호출해도 "현재 ACTIVE인 사전 체크리스트"를
@@ -30,8 +39,10 @@ public class PreChecklistCont {
    * POST /checklists/pre/session/start?memberId=1
    */
   @PostMapping("/session/start")
-  public ResponseEntity<PreChecklistDTO.SessionRes> startSession(@RequestParam("memberId") Long memberId) {
-    return ResponseEntity.ok(preChecklistService.startOrGetSession(memberId));
+  public ResponseEntity<PreChecklistDTO.SessionRes> startSession(
+      @RequestParam("memberId") Long memberId
+  ) {
+      return ResponseEntity.ok(preChecklistService.createNewSession(memberId));
   }
 
   /**
@@ -85,6 +96,43 @@ public class PreChecklistCont {
       return ResponseEntity.ok(preChecklistService.getItemStatuses(sessionId));
   }
 
+  /**
+   * (H) 기록보기
+   * GET /checklists/pre/history?memberId=1
+   */
+  @GetMapping("/history")
+  public ResponseEntity<List<PreChecklistDTO.SessionHistoryItem>> getHistory(
+      @RequestParam("memberId") Long memberId
+  ) {
+      return ResponseEntity.ok(preChecklistService.getPreHistory(memberId));
+  }
+
+
+  /**
+   * (I) 세션 완료 처리
+   * POST /checklists/pre/session/{sessionId}/complete?memberId=1
+   */
+  @PostMapping("/session/{sessionId}/complete")
+  public ResponseEntity<Void> complete(
+      @RequestParam("memberId") Long memberId,
+      @PathVariable("sessionId") Long sessionId
+  ) {
+      preChecklistService.completeSession(memberId, sessionId);
+      return ResponseEntity.ok().build();
+  }
+
+  /**
+   * (J) 세션 삭제(Soft delete)
+   * DELETE /checklists/pre/session/{sessionId}?memberId=1
+   */
+  @DeleteMapping("/session/{sessionId}")
+  public ResponseEntity<Void> delete(
+      @RequestParam("memberId") Long memberId,
+      @PathVariable("sessionId") Long sessionId
+  ) {
+      preChecklistService.softDeleteSession(memberId, sessionId);
+      return ResponseEntity.noContent().build();
+  }
 
 
 

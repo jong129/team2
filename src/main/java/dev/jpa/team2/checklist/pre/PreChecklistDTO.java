@@ -45,6 +45,10 @@ public class PreChecklistDTO {
         private Long sessionId;
         private Long templateId;
         private String status; // IN_PROGRESS / COMPLETED
+        
+        // ✅ 추가
+        private boolean reused;       // 진행중 세션을 재사용했는지
+        private boolean hasProgress;  // 체크 응답이 1개라도 있는지
     }
 
     /**
@@ -83,6 +87,19 @@ public class PreChecklistDTO {
         private Long itemId;
         private String title;
     }
+    
+    /**
+     * (F) 세션의 항목별 체크 상태 응답 DTO (이어하기용)
+     */
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ItemStatusRes {
+        private Long itemId;
+        private String checkStatus; // DONE / NOT_DONE / NOT_REQUIRED
+    }
+
 
     
 }

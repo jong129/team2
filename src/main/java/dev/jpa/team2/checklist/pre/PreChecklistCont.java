@@ -1,6 +1,9 @@
 package dev.jpa.team2.checklist.pre;
 
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -57,6 +60,33 @@ public class PreChecklistCont {
   ) {
     return ResponseEntity.ok(preChecklistService.getSummary(sessionId));
   }
+  
+  /**
+   * (E) 사전 체크리스트 세션 초기화
+   *
+   * POST /checklists/pre/session/{sessionId}/reset
+   */
+  @PostMapping("/session/{sessionId}/reset")
+  public ResponseEntity<Void> resetSession(
+      @PathVariable("sessionId") Long sessionId
+  ) {
+      preChecklistService.resetSession(sessionId);
+      return ResponseEntity.noContent().build();
+  }
+  
+  /**
+   * (F) 이어하기용: 세션의 항목별 체크 상태 목록 조회
+   * GET /checklists/pre/session/{sessionId}/statuses
+   */
+  @GetMapping("/session/{sessionId}/statuses")
+  public ResponseEntity<java.util.List<PreChecklistDTO.ItemStatusRes>> getStatuses(
+      @PathVariable("sessionId") Long sessionId
+  ) {
+      return ResponseEntity.ok(preChecklistService.getItemStatuses(sessionId));
+  }
+
+
+
 
 
 }

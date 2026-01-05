@@ -37,11 +37,12 @@ public class ChatMessageCont {
     // GET /api/chat/messages/search?keyword=...&size=50
     @GetMapping("/messages/search")
     public ResponseEntity<List<ChatSessionDto.GroupedByDate<ChatSessionDto.SearchResultItem>>> search(
-        @RequestParam String keyword,
-        @RequestParam(defaultValue = "50") int size,
+        @RequestParam("keyword") String keyword,
+        @RequestParam(name = "size", defaultValue = "50") int size,
         HttpSession httpSession
     ) {
         Long memberId = AuthSessionUtil.requireMemberId(httpSession);
         return ResponseEntity.ok(messageService.searchMyMessages(memberId, keyword, size));
     }
+
 }

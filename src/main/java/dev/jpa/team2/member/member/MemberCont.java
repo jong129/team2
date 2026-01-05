@@ -167,6 +167,7 @@ public class MemberCont {
     map.put("memberId", member.getMemberId());
     map.put("loginId", member.getLoginId());
     map.put("status", member.getStatus());
+    map.put("name", member.getName());
 
     return ResponseEntity.ok(map);
   }

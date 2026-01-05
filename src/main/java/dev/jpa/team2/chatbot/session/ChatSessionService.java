@@ -8,6 +8,8 @@ import java.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import dev.jpa.team2.chatbot.message.ChatMessage;
+import dev.jpa.team2.chatbot.message.ChatMessageRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,7 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 public class ChatSessionService {
 
     private final ChatSessionRepository sessionRepo;
-
+    private final ChatMessageRepository messageRepo;
+    
     // 세션 생성
     public ChatSession createSession(Long memberId, String title) {
         String t = (title == null || title.trim().isEmpty()) ? "새 대화" : title.trim();
@@ -56,6 +59,44 @@ public class ChatSessionService {
         s.setLastMessageAt(LocalDateTime.now());
         sessionRepo.save(s);
     }
+    
+    public void ensureTitleUpdated(Long memberId, Long sessionId) {
+      ChatSession session = requireOwnedSession(memberId, sessionId);
+
+      String cur = session.getTitle();
+      // 이미 제목이 있고 "새 대화"가 아니면 갱신 안 함
+      if (cur != null && !cur.trim().isBlank() && !"새 대화".equals(cur.trim())) {
+          return;
+      }
+
+      List<ChatMessage> msgs = messageRepo.findBySessionIdOrderByCreatedAtAsc(sessionId);
+      if (msgs == null || msgs.isEmpty()) return;
+
+      ChatMessage firstUser = null;
+      for (ChatMessage m : msgs) {
+          if ("user".equalsIgnoreCase(m.getRole())) {
+              firstUser = m;
+              break;
+          }
+      }
+      if (firstUser == null) return;
+
+      String content = firstUser.getContent();
+      if (content == null) return;
+      content = content.trim();
+      if (content.isEmpty()) return;
+
+      // 제목 가공: 공백 정리 + 길이 제한
+      String title = content.replaceAll("\\s+", " ");
+      if (title.length() > 25) title = title.substring(0, 25);
+
+      session.setTitle(title);
+      sessionRepo.save(session);
+
+      log.info("[ChatSessionService] ensureTitleUpdated ok | memberId={} sessionId={} title={}",
+              memberId, sessionId, title);
+  }
+
 
     // 날짜별 세션 그룹 (aibotpage)
     @Transactional(readOnly = true)

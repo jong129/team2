@@ -24,4 +24,14 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
         @Param("keyword") String keyword,
         Pageable pageable
     );
+    
+    // 관리자: 메시지 갯수
+    @Query("""
+        SELECT m.sessionId, COUNT(m)
+        FROM ChatMessage m
+        WHERE m.sessionId IN :sessionIds
+        GROUP BY m.sessionId
+        """)
+    List<Object[]> countBySessionIds(@Param("sessionIds") List<Long> sessionIds);
+
 }

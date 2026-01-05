@@ -46,6 +46,11 @@ public class ChatMessageService {
 
         sessionService.touchLastMessageAt(s);
 
+        // ✅ (B) "새 대화" 제목 자동 생성은 사용자 메시지 저장 후에만 실행
+        if ("user".equalsIgnoreCase(role)) {
+            sessionService.ensureTitleUpdated(memberId, sessionId);
+        }
+        
         log.info("[ChatMessageService] saveMessage ok | memberId={} sessionId={} chatId={} role={}",
                 memberId, sessionId, saved.getChatId(), role);
 

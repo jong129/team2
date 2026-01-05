@@ -64,6 +64,21 @@ public class ChatSessionCont {
             throw e;
         }
     }
+    
+    //  세션 title 업데이트용 API
+    @PatchMapping("/{sessionId}/title")
+    public ResponseEntity<?> updateTitle(@PathVariable("sessionId") Long sessionId,
+                                         HttpSession httpSession) {
+        Long memberId = AuthSessionUtil.requireMemberId(httpSession);
+        
+        // 제목 갱신 시도
+        sessionService.ensureTitleUpdated(memberId, sessionId);
+        
+        // 결과 title 반환
+        ChatSession s = sessionService.requireOwnedSession(memberId, sessionId);
+        return ResponseEntity.ok(Map.of("title", s.getTitle()));
+    }
+
 
     // aibotpage: 날짜별 세션 그룹
     // GET /api/chat/sessions/grouped
@@ -76,7 +91,7 @@ public class ChatSessionCont {
     // 세션 삭제(소프트)
     // DELETE /api/chat/sessions/{sessionId}
     @DeleteMapping("/{sessionId}")
-    public ResponseEntity<?> delete(@PathVariable Long sessionId, HttpSession httpSession) {
+    public ResponseEntity<?> delete(@PathVariable("sessionId") Long sessionId, HttpSession httpSession) {
         Long memberId = AuthSessionUtil.requireMemberId(httpSession);
         sessionService.softDelete(memberId, sessionId);
         return ResponseEntity.ok(Map.of("deleted", true));

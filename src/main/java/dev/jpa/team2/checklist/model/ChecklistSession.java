@@ -55,7 +55,7 @@ public class ChecklistSession {
     private String deletedYn = "N";   // 'Y'/'N'
 
     @Column(name = "DELETED_AT")
-    private java.util.Date deletedAt;
+    private LocalDateTime deletedAt;
 
 
     @PrePersist

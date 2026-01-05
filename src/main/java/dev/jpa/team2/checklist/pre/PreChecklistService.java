@@ -15,6 +15,15 @@ import dev.jpa.team2.checklist.model.Phase;
 import dev.jpa.team2.checklist.model.TemplateStatus;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+
+import jakarta.persistence.criteria.Path;
+import jakarta.persistence.criteria.Predicate;
+
 /**
  * 사전 체크리스트(PRE) 비즈니스 로직 담당 서비스
  *
@@ -221,27 +230,68 @@ public class PreChecklistService {
   // =========================================================
 
   /**
-   * (H) 기록보기: 내 사전(PRE) 체크리스트 세션 목록 - 삭제되지 않은(N) 것만 - 최신 startedAt DESC
+   * (H) 기록보기 + 검색 + 페이징
+   * - page: 0부터
+   * - size: 기본 5 (5개 초과 시 다음 페이지)
    */
-  public List<PreChecklistDTO.SessionHistoryItem> getPreHistory(Long memberId) {
+  @Transactional(readOnly = true)
+  public PageResponseDTO<PreChecklistDTO.SessionHistoryItem> getPreHistoryPage(
+      Long memberId,
+      String status,
+      LocalDateTime from,
+      LocalDateTime to,
+      String dateType,
+      int page,
+      int size
+  ) {
+      Pageable pageable = PageRequest.of(
+          page,
+          size,
+          Sort.by(Sort.Direction.DESC, "startedAt")
+      );
 
-    List<ChecklistSession> sessions =
-        sessionRepo.findByMemberIdAndPhaseAndDeletedYnOrderByStartedAtDesc(
-            memberId, Phase.PRE, "N"
-        );
+      boolean useCompletedAt = "COMPLETED".equalsIgnoreCase(dateType);
 
-    return sessions.stream()
-        .<PreChecklistDTO.SessionHistoryItem>map(s -> PreChecklistDTO.SessionHistoryItem.builder()
-            .sessionId(s.getSessionId())
-            .templateId(s.getTemplate().getTemplateId())
-            .templateName(s.getTemplate().getTemplateName())
-            .status(s.getStatus())
-            .startedAt(s.getStartedAt())
-            .completedAt(s.getCompletedAt())
-            .build()
-        )
-        .toList();
-}
+      Specification<ChecklistSession> spec = (root, query, cb) -> {
+          java.util.List<Predicate> p = new java.util.ArrayList<>();
+
+          p.add(cb.equal(root.get("memberId"), memberId));
+          p.add(cb.equal(root.get("phase"), Phase.PRE));
+          p.add(cb.equal(root.get("deletedYn"), "N"));
+
+          if (status != null && !status.isBlank()) {
+              p.add(cb.equal(root.get("status"), status));
+          }
+
+          Path<LocalDateTime> target =
+              useCompletedAt ? root.get("completedAt") : root.get("startedAt");
+
+          if (useCompletedAt) {
+              p.add(cb.isNotNull(root.get("completedAt")));
+          }
+
+          if (from != null) p.add(cb.greaterThanOrEqualTo(target, from));
+          if (to != null) p.add(cb.lessThanOrEqualTo(target, to));
+
+          return cb.and(p.toArray(new Predicate[0]));
+      };
+
+      Page<ChecklistSession> pageResult = sessionRepo.findAll(spec, pageable);
+
+      Page<PreChecklistDTO.SessionHistoryItem> dtoPage =
+          pageResult.map(s ->
+              PreChecklistDTO.SessionHistoryItem.builder()
+                  .sessionId(s.getSessionId())
+                  .templateId(s.getTemplate().getTemplateId())
+                  .templateName(s.getTemplate().getTemplateName())
+                  .status(s.getStatus())
+                  .startedAt(s.getStartedAt())
+                  .completedAt(s.getCompletedAt())
+                  .build()
+          );
+
+      return PageResponseDTO.of(dtoPage);
+  }
 
   /**
    * (I) 소프트 삭제: 세션 삭제 처리 - 본인 세션만 삭제 가능 - DELETED_YN='Y', DELETED_AT=SYSDATE(=new
@@ -262,7 +312,7 @@ public class PreChecklistService {
     }
 
     session.setDeletedYn("Y");
-    session.setDeletedAt(new java.util.Date());
+    session.setDeletedAt(LocalDateTime.now());
 
     sessionRepo.save(session);
   }

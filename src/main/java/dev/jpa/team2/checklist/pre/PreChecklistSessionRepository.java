@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import dev.jpa.team2.checklist.model.ChecklistSession;
 import dev.jpa.team2.checklist.model.Phase;
@@ -13,7 +14,7 @@ import dev.jpa.team2.checklist.model.Phase;
  * - PRE 진행중 세션이 있으면 재사용하기 위해 사용
  * - 기록보기(히스토리) 목록 조회에도 사용
  */
-public interface PreChecklistSessionRepository extends JpaRepository<ChecklistSession, Long> {
+public interface PreChecklistSessionRepository extends JpaRepository<ChecklistSession, Long>, JpaSpecificationExecutor<ChecklistSession> {
 
     /**
      * (기존) 사용자(memberId)의 특정 단계(PRE/POST) + 상태(IN_PROGRESS/COMPLETED) 세션 1개 조회

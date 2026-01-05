@@ -1,5 +1,6 @@
 package dev.jpa.team2.checklist.pre;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
@@ -95,16 +96,31 @@ public class PreChecklistCont {
   ) {
       return ResponseEntity.ok(preChecklistService.getItemStatuses(sessionId));
   }
-
+  
   /**
-   * (H) 기록보기
+   * (H) 기록보기 + 검색(필터)
+   *
+   * 예)
    * GET /checklists/pre/history?memberId=1
+   * GET /checklists/pre/history?memberId=1&status=COMPLETED
+   * GET /checklists/pre/history?memberId=1&from=2026-01-01T00:00:00&to=2026-01-05T23:59:59
+   * GET /checklists/pre/history?memberId=1&dateType=COMPLETED&from=2026-01-01T00:00:00&to=2026-01-05T23:59:59
    */
   @GetMapping("/history")
-  public ResponseEntity<List<PreChecklistDTO.SessionHistoryItem>> getHistory(
-      @RequestParam("memberId") Long memberId
+  public ResponseEntity<PageResponseDTO<PreChecklistDTO.SessionHistoryItem>> getHistory(
+      @RequestParam("memberId") Long memberId,
+      @RequestParam(value = "status", required = false) String status,
+      @RequestParam(value = "from", required = false) LocalDateTime from,
+      @RequestParam(value = "to", required = false) LocalDateTime to,
+      @RequestParam(value = "dateType", defaultValue = "STARTED") String dateType,
+      @RequestParam(value = "page", defaultValue = "0") int page,
+      @RequestParam(value = "size", defaultValue = "5") int size
   ) {
-      return ResponseEntity.ok(preChecklistService.getPreHistory(memberId));
+      return ResponseEntity.ok(
+          preChecklistService.getPreHistoryPage(
+              memberId, status, from, to, dateType, page, size
+          )
+      );
   }
 
 

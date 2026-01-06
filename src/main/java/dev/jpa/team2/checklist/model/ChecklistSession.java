@@ -50,6 +50,13 @@ public class ChecklistSession {
 
     @Column(name = "COMPLETED_AT")
     private LocalDateTime completedAt;
+    
+    @Column(name = "DELETED_YN", nullable = false, length = 1)
+    private String deletedYn = "N";   // 'Y'/'N'
+
+    @Column(name = "DELETED_AT")
+    private LocalDateTime deletedAt;
+
 
     @PrePersist
     public void prePersist() {

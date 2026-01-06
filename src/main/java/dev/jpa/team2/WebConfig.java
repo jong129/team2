@@ -13,7 +13,8 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedOrigins(
                           "http://121.160.42.13:5173",
                           "http://localhost:5173",
-                          "http://121.160.42.21:5173"
+                          "http://121.160.42.21:5173",
+                          "http://121.160.42.28:5173"
                 ) // 프론트엔드 출처
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")

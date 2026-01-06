@@ -41,7 +41,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(
+        config.setAllowedOrigins(List.of(   // 개인 주소 넣기
             "http://localhost:5173",
             "http://121.160.42.21:5173",
             "http://121.160.42.13:5173"

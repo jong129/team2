@@ -8,11 +8,21 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import dev.jpa.team2.member.email.EmailVerificationService;
+import dev.jpa.team2.member.member_role.MemberRole;
+import dev.jpa.team2.member.member_role.MemberRoleRepository;
+import dev.jpa.team2.member.role.Role;
+import dev.jpa.team2.member.role.RoleRepository;
 
 @Service
 @Transactional
 public class MemberService {
 
+  @Autowired
+  private RoleRepository roleRepository;
+
+  @Autowired
+  private MemberRoleRepository memberRoleRepository;
+  
   @Autowired
   private PasswordEncoder passwordEncoder;
   
@@ -54,27 +64,38 @@ public class MemberService {
    * 2) 회원 등록
    * ================================================== */
 
+  @Transactional
   public Member save(MemberDTO memberDTO) {
 
-    // 이메일 인증 여부 확인
-    boolean verified =
-        emailVerificationService.isVerified(memberDTO.getEmail());
+      // 1. 이메일 인증 확인
+      if (!emailVerificationService.isVerified(memberDTO.getEmail())) {
+          throw new IllegalStateException("이메일 인증을 완료해야 회원가입이 가능합니다.");
+      }
 
-    if (!verified) {
-      throw new IllegalStateException("이메일 인증을 완료해야 회원가입이 가능합니다.");
-    }
+      // 2. 이메일 중복 체크
+      if (memberRepository.countByEmail(memberDTO.getEmail()) > 0) {
+          throw new IllegalStateException("이미 가입된 이메일입니다.");
+      }
 
-    // 이메일 중복 체크 (안전)
-    if (memberRepository.countByEmail(memberDTO.getEmail()) > 0) {
-      throw new IllegalStateException("이미 가입된 이메일입니다.");
-    }
+      // 3. 회원 저장
+      Member entity = memberDTO.toEntity();
+      entity.setPassword(passwordEncoder.encode(entity.getPassword()));
+      Member savedEntity = memberRepository.save(entity);
 
-    // 회원 저장
-    Member entity = memberDTO.toEntity();
-    entity.setPassword(passwordEncoder.encode(entity.getPassword()));
-    Member savedEntity = memberRepository.save(entity);
-    System.out.println("-> memberId: " + savedEntity.getMemberId());
-    return savedEntity;
+      // 4. USER 권한 자동 부여 ⭐⭐⭐ (이게 핵심 수정)
+      Role userRole = roleRepository.findByRoleName("USER");
+      if (userRole == null) {
+          throw new IllegalStateException("USER 권한이 존재하지 않습니다.");
+      }
+
+      memberRoleRepository.save(
+          new MemberRole(
+              savedEntity.getMemberId(),
+              userRole.getRoleId()
+          )
+      );
+
+      return savedEntity;
   }
 
 

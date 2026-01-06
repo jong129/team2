@@ -2,6 +2,7 @@ package dev.jpa.team2.checklist.pre;
 
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class PreChecklistDTO {
@@ -100,6 +101,20 @@ public class PreChecklistDTO {
         private String checkStatus; // DONE / NOT_DONE / NOT_REQUIRED
     }
 
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SessionHistoryItem {
+        private Long sessionId;
+        private Long templateId;
+        private String templateName; // optional (조인하거나 template에서 꺼내면 됨)
+        private String status;       // IN_PROGRESS / COMPLETED
+
+        private LocalDateTime startedAt;   // ✅ 변경
+        private LocalDateTime completedAt; // ✅ 변경
+
+    }
 
     
 }

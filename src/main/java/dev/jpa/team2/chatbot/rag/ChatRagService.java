@@ -111,6 +111,7 @@ public class ChatRagService {
 
         dto.setAnswer(answer);
         dto.setReferences(topChunks);
+        dto.setAssistantChatId(assistantChatId);
         return dto;
     }
 }

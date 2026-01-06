@@ -43,6 +43,12 @@ public class ChatMessage {
 
     @Column(name = "TOKENS_OUT")
     private Integer tokensOut;
+    
+    @Column(name = "LIKE_COUNT", nullable = false)
+    private Integer likeCount = 0;
+
+    @Column(name = "DISLIKE_COUNT", nullable = false)
+    private Integer dislikeCount = 0;
 
     public static ChatMessage of(Long sessionId, String role, String content) {
         ChatMessage m = new ChatMessage();

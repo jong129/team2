@@ -20,94 +20,87 @@ public class ChatMessageRefCont {
     // GET /api/chat/messages/{chatId}/refs
     @GetMapping("/messages/{chatId}/refs")
     public ResponseEntity<ChatMessageRefDto> myRefs(
-        @PathVariable Long chatId,
+        @PathVariable("chatId") Long chatId,
         HttpSession session
     ) {
         long t0 = System.currentTimeMillis();
-        try {
-            Long memberId = AuthSessionUtil.requireMemberId(session);
+        Long memberId = AuthSessionUtil.requireMemberId(session);
 
-            log.info("[ChatMessageRefCont] myRefs | memberId={} chatId={}",
-                    memberId, chatId);
+        log.info("[ChatMessageRefCont] myRefs | memberId={} chatId={}", memberId, chatId);
 
-            ChatMessageRefDto res =
-                refService.getRefsForMyChat(memberId, chatId);
+        ChatMessageRefDto res = refService.getRefsForMyChat(memberId, chatId);
 
-            log.info("[ChatMessageRefCont] myRefs ok | chatId={} ms={}",
-                    chatId, System.currentTimeMillis() - t0);
-
-            return ResponseEntity.ok(res);
-
-        } catch (Exception e) {
-            log.error("[ChatMessageRefCont] myRefs failed | chatId={}", chatId, e);
-            throw e;
-        }
+        log.info("[ChatMessageRefCont] myRefs ok | chatId={} ms={}", chatId, System.currentTimeMillis() - t0);
+        return ResponseEntity.ok(res);
     }
-
 
     // 관리자/디버그
     // GET /api/chat/admin/messages/{chatId}/refs
     @GetMapping("/admin/messages/{chatId}/refs")
     public ResponseEntity<ChatMessageRefDto> adminRefs(
-        @PathVariable Long chatId,
+        @PathVariable("chatId") Long chatId,
         HttpSession session
     ) {
-        try {
-            Long memberId = AuthSessionUtil.requireMemberId(session);
+        Long memberId = AuthSessionUtil.requireMemberId(session);
+        // TODO 관리자 권한 체크
 
-            // TODO 관리자 권한 체크
-            // AuthSessionUtil.requireAdmin(session);
-
-            log.warn("[ChatMessageRefCont] adminRefs | adminId={} chatId={}",
-                    memberId, chatId);
-
-            return ResponseEntity.ok(refService.getRefsForAdmin(chatId));
-
-        } catch (Exception e) {
-            log.error("[ChatMessageRefCont] adminRefs failed | chatId={}", chatId, e);
-            throw e;
-        }
+        log.warn("[ChatMessageRefCont] adminRefs | adminId={} chatId={}", memberId, chatId);
+        return ResponseEntity.ok(refService.getRefsForAdmin(chatId));
     }
-
 
     // 품질 분석: 회원
-    // GET /api/chat/refs/stats/my?days=30&top=10
+    // GET /api/chat/refs/stats/my?days=30&top=10&badN=3
     @GetMapping("/refs/stats/my")
     public ResponseEntity<ChatMessageRefDto> statsMy(
-        @RequestParam(defaultValue = "30") int days,
-        @RequestParam(defaultValue = "10") int top,
+        @RequestParam(name = "days", defaultValue = "30") int days,
+        @RequestParam(name = "top", defaultValue = "10") int top,
+        @RequestParam(name = "badN", defaultValue = "3") int badN,
         HttpSession session
     ) {
-        try {
-            Long memberId = AuthSessionUtil.requireMemberId(session);
-            return ResponseEntity.ok(refService.statsMy(memberId, days, top));
-        } catch (Exception e) {
-            log.error("[ChatMessageRefCont] statsMy failed | days={} top={}",
-                    days, top, e);
-            throw e;
-        }
+        Long memberId = AuthSessionUtil.requireMemberId(session);
+        return ResponseEntity.ok(refService.statsMy(memberId, days, top, badN));
     }
 
-
-    // 품질 분석: 전체
-    // GET /api/chat/refs/stats/all?days=30&top=10
+    // 품질 분석: 전체(관리자)
+    // GET /api/chat/refs/stats/all?days=30&top=10&badN=3
     @GetMapping("/refs/stats/all")
     public ResponseEntity<ChatMessageRefDto> statsAll(
-        @RequestParam(defaultValue = "30") int days,
-        @RequestParam(defaultValue = "10") int top,
+        @RequestParam(name = "days", defaultValue = "30") int days,
+        @RequestParam(name = "top", defaultValue = "10") int top,
+        @RequestParam(name = "badN", defaultValue = "3") int badN,
         HttpSession session
     ) {
-        try {
-            Long memberId = AuthSessionUtil.requireMemberId(session);
+        Long memberId = AuthSessionUtil.requireMemberId(session);
+        // TODO 관리자 권한 체크
 
-            // TODO 관리자 권한 체크
-            // AuthSessionUtil.requireAdmin(session);
+        return ResponseEntity.ok(refService.statsAll(days, top, badN));
+    }
 
-            return ResponseEntity.ok(refService.statsAll(days, top));
-        } catch (Exception e) {
-            log.error("[ChatMessageRefCont] statsAll failed | days={} top={}",
-                    days, top, e);
-            throw e;
-        }
+    // ✅ 나쁜 답변 기반 문제 chunk 후보(회원)
+    // GET /api/chat/refs/bad-chunks/my?days=30&top=10&badN=3
+    @GetMapping("/refs/bad-chunks/my")
+    public ResponseEntity<ChatMessageRefDto> badChunksMy(
+        @RequestParam(name = "days", defaultValue = "30") int days,
+        @RequestParam(name = "top", defaultValue = "10") int top,
+        @RequestParam(name = "badN", defaultValue = "3") int badN,
+        HttpSession session
+    ) {
+        Long memberId = AuthSessionUtil.requireMemberId(session);
+        return ResponseEntity.ok(refService.badChunksMy(memberId, days, top, badN));
+    }
+
+    // ✅ 나쁜 답변 기반 문제 chunk 후보(전체/관리자)
+    // GET /api/chat/refs/bad-chunks/all?days=30&top=10&badN=3
+    @GetMapping("/refs/bad-chunks/all")
+    public ResponseEntity<ChatMessageRefDto> badChunksAll(
+        @RequestParam(name = "days", defaultValue = "30") int days,
+        @RequestParam(name = "top", defaultValue = "10") int top,
+        @RequestParam(name = "badN", defaultValue = "3") int badN,
+        HttpSession session
+    ) {
+        Long memberId = AuthSessionUtil.requireMemberId(session);
+        // TODO 관리자 권한 체크
+
+        return ResponseEntity.ok(refService.badChunksAll(days, top, badN));
     }
 }

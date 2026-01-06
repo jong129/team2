@@ -40,8 +40,8 @@ public class ChatMessageService {
     // 메시지 저장
     public ChatMessage saveMessage(Long memberId, Long sessionId, String role, String content) {
         ChatSession s = sessionService.requireOwnedSession(memberId, sessionId);
-
-        ChatMessage msg = ChatMessage.of(sessionId, role, content);
+ 
+        ChatMessage msg = ChatMessage.of(memberId, sessionId, role, content);
         ChatMessage saved = messageRepo.save(msg);
 
         sessionService.touchLastMessageAt(s);

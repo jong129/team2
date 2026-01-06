@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import dev.jpa.team2.member.member_role.MemberRoleRepository;
 import jakarta.servlet.http.HttpSession;
 
 @RestController
@@ -30,6 +31,9 @@ public class MemberCont {
   
   @Autowired
   private MemberService memberService;
+  
+  @Autowired
+  private MemberRoleRepository memberRoleRepository;
 
   public MemberCont() {
     System.out.println("-> MemberController created.");
@@ -162,7 +166,13 @@ public class MemberCont {
     
     // 로그인 사용자 기억
     session.setAttribute("LOGIN_MEMBER_ID", member.getMemberId());
+    
+    // roles 조회
+    List<String> roles = memberRoleRepository.findRoleNamesByMemberId(member.getMemberId());
 
+    // 세션에도 저장(백엔드 관리자 API 보호용)
+    session.setAttribute("LOGIN_ROLES", roles);
+    
     map.put("cnt", 1); // 로그인 성공
     map.put("memberId", member.getMemberId());
     map.put("loginId", member.getLoginId());

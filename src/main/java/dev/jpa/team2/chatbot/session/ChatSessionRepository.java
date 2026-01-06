@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.Optional;
 import java.time.LocalDateTime;
 
-import org.springframework.data.domain.*;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
@@ -16,7 +18,22 @@ public interface ChatSessionRepository extends JpaRepository<ChatSession, Long> 
 
     List<ChatSession> findByMemberIdAndSessionStatusOrderByLastMessageAtDesc(Long memberId, String sessionStatus);
     
- // 관리자: 전체 세션 조회(필터 포함)
+    // 회원: 커서 기반 세션 목록 (ACTIVE만)
+    @Query("""
+        SELECT s
+        FROM ChatSession s
+        WHERE s.memberId = :memberId
+          AND s.sessionStatus = 'ACTIVE'
+          AND (:cursor IS NULL OR s.lastMessageAt < :cursor)
+        ORDER BY s.lastMessageAt DESC
+    """)
+    Page<ChatSession> findMyActiveSessionsCursor(
+        @Param("memberId") Long memberId,
+        @Param("cursor") LocalDateTime cursor,
+        Pageable pageable
+    );
+    
+    // 관리자: 전체 세션 조회(필터 포함)
     @Query("""
         SELECT s
         FROM ChatSession s

@@ -24,6 +24,9 @@ public class ChatMessageRef {
     @Column(name = "CHUNK_ID", nullable = false)
     private Long chunkId; // 문서 근거
 
+    @Column(name="RANK_NO", nullable=false)
+    private Integer rankNo;
+    
     @Column(name = "SCORE", nullable = false)
     private Double score; // 유사도 점수
 

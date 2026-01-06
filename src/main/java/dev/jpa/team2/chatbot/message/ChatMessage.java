@@ -19,7 +19,11 @@ public class ChatMessage {
         allocationSize = 1
     )
     @Column(name = "CHAT_ID")
-    private Long chatId; 
+    private Long chatId;
+
+    // ✅ 추가: NOT NULL 컬럼이므로 엔티티에도 반드시 있어야 함
+    @Column(name = "MEMBER_ID", nullable = false)
+    private Long memberId;
 
     @Column(name = "SESSION_ID", nullable = false)
     private Long sessionId;
@@ -34,7 +38,6 @@ public class ChatMessage {
     @Column(name = "CREATED_AT", nullable = false)
     private LocalDateTime createdAt;
 
-    // 선택(나중에 추가 가능 : 분석/과금/성능로그)
     @Column(name = "MODEL")
     private String model;
 
@@ -43,15 +46,17 @@ public class ChatMessage {
 
     @Column(name = "TOKENS_OUT")
     private Integer tokensOut;
-    
+
     @Column(name = "LIKE_COUNT", nullable = false)
     private Integer likeCount = 0;
 
     @Column(name = "DISLIKE_COUNT", nullable = false)
     private Integer dislikeCount = 0;
 
-    public static ChatMessage of(Long sessionId, String role, String content) {
+    // ✅ 변경: memberId를 받도록 수정
+    public static ChatMessage of(Long memberId, Long sessionId, String role, String content) {
         ChatMessage m = new ChatMessage();
+        m.memberId = memberId;
         m.sessionId = sessionId;
         m.role = role;
         m.content = content;

@@ -17,7 +17,7 @@ public class ChatMessageFeedbackCont {
     // POST /api/chat/messages/{chatId}/feedback  { liked: true/false }
     @PostMapping("/{chatId}/feedback")
     public ResponseEntity<ChatMessageFeedbackDto> feedback(
-        @PathVariable Long chatId,
+        @PathVariable("chatId") Long chatId,
         @RequestBody ChatMessageFeedbackDto dto,
         HttpSession session
     ) {

@@ -7,6 +7,8 @@ import java.util.*;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import dev.jpa.team2.chatbot.message.ChatMessage;
 import dev.jpa.team2.chatbot.message.ChatMessageRepository;
@@ -136,4 +138,31 @@ public class ChatSessionService {
 
         log.info("[ChatSessionService] softDelete ok | memberId={} sessionId={}", memberId, sessionId);
     }
+    
+    public Map<String, Object> listMySessionsCursor(Long memberId, LocalDateTime cursor, int size) {
+      int safeSize = Math.max(1, Math.min(size, 50));
+
+      var page = sessionRepo.findMyActiveSessionsCursor(
+          memberId,
+          cursor,
+          PageRequest.of(0, safeSize, Sort.by(Sort.Direction.DESC, "lastMessageAt"))
+      );
+
+      var items = page.getContent().stream()
+          .map(ChatSessionDto.SessionItem::from)
+          .toList();
+
+      String nextCursor = null;
+      if (!items.isEmpty()) {
+          // 마지막 항목의 lastMessageAt을 nextCursor로
+          var last = page.getContent().get(page.getContent().size() - 1);
+          if (last.getLastMessageAt() != null) nextCursor = last.getLastMessageAt().toString();
+      }
+
+      return Map.of(
+          "items", items,
+          "nextCursor", nextCursor,
+          "hasMore", page.hasNext()
+      );
+  }
 }

@@ -2,70 +2,78 @@ package dev.jpa.team2.member.mypage;
 
 import org.springframework.stereotype.Component;
 
+import dev.jpa.team2.admin.activity.ActivityLogService;
+import dev.jpa.team2.admin.update.MemberUpdateHistoryService;
+import dev.jpa.team2.admin.password.PasswordChangeHistoryService;
+import dev.jpa.team2.admin.withdraw.MemberWithdrawService;
 import jakarta.servlet.http.HttpServletRequest;
 
 @Component
 public class MyPageLogWriterImpl implements MyPageLogWriter {
 
-  // TODO: 아래 3~4개 의존성을 "admin 쪽에서 이미 만든" 서비스/레포로 교체해서 주입
-  // 예시:
-  // private final MemberUpdateHistoryService memberUpdateHistoryService;
-  // private final PasswordChangeHistoryService passwordChangeHistoryService;
-  // private final MemberWithdrawHistoryService memberWithdrawHistoryService;
-  // private final MemberActivityLogService memberActivityLogService;
+  private final MemberUpdateHistoryService memberUpdateHistoryService;
+  private final PasswordChangeHistoryService passwordChangeHistoryService;
+  private final MemberWithdrawService memberWithdrawService;
+  private final ActivityLogService activityLogService;
 
-  public MyPageLogWriterImpl(
-      /* 여기에 admin 쪽 로그 서비스들을 생성자 주입 */
-  ) {
-    // this.memberUpdateHistoryService = memberUpdateHistoryService;
-    // ...
+  public MyPageLogWriterImpl(MemberUpdateHistoryService memberUpdateHistoryService,
+                             PasswordChangeHistoryService passwordChangeHistoryService,
+                             MemberWithdrawService memberWithdrawService,
+                             ActivityLogService activityLogService) {
+    this.memberUpdateHistoryService = memberUpdateHistoryService;
+    this.passwordChangeHistoryService = passwordChangeHistoryService;
+    this.memberWithdrawService = memberWithdrawService;
+    this.activityLogService = activityLogService;
   }
 
-  private String clientIp(HttpServletRequest request) {
-    if (request == null) return null;
-    String xf = request.getHeader("X-Forwarded-For");
-    if (xf != null && !xf.isBlank()) return xf.split(",")[0].trim();
-    return request.getRemoteAddr();
-  }
-
-  private String userAgent(HttpServletRequest request) {
-    if (request == null) return null;
-    return request.getHeader("User-Agent");
+  private String safe(String s) {
+    return (s == null) ? null : s.trim();
   }
 
   @Override
   public void onNameChanged(Long memberId, String oldName, String newName, HttpServletRequest request) {
-    String ip = clientIp(request);
-    String ua = userAgent(request);
+    if (memberId == null) return;
 
-    // 1) 회원정보수정 이력 INSERT (admin 구현 호출)
-    // memberUpdateHistoryService.recordNameChange(memberId, oldName, newName, ip, ua);
+    String oldV = safe(oldName);
+    String newV = safe(newName);
 
-    // 2) 회원활동 로그 INSERT
-    // memberActivityLogService.record(memberId, "PROFILE_UPDATE", "NAME", ip, ua);
+    // 1) 회원정보 수정 이력 (본인 수정: changedById = memberId)
+    memberUpdateHistoryService.recordNameChange(
+        memberId,
+        memberId,
+        oldV,
+        newV,
+        "USER_CHANGE"
+    );
+
+    // 2) 활동 로그
+    // 디테일은 너무 길게 가지 말고, 필요하면 "NAME" 정도로만
+    activityLogService.record(memberId, "PROFILE_UPDATE", "NAME", request);
   }
 
   @Override
   public void onPasswordChanged(Long memberId, HttpServletRequest request) {
-    String ip = clientIp(request);
-    String ua = userAgent(request);
+    if (memberId == null) return;
 
-    // 1) 회원 비번변경 이력 INSERT
-    // passwordChangeHistoryService.record(memberId, ip, ua);
+    // 1) 비번 변경 이력 (본인 변경)
+    passwordChangeHistoryService.recordSelf(memberId);
 
-    // 2) 회원활동 로그 INSERT
-    // memberActivityLogService.record(memberId, "PASSWORD_CHANGE", null, ip, ua);
+    // 2) 활동 로그
+    activityLogService.record(memberId, "PASSWORD_CHANGE", null, request);
   }
 
   @Override
   public void onWithdrawn(Long memberId, String reason, HttpServletRequest request) {
-    String ip = clientIp(request);
-    String ua = userAgent(request);
+    if (memberId == null) return;
 
-    // 1) 회원탈퇴 이력 INSERT
-    // memberWithdrawHistoryService.record(memberId, reason, ip, ua);
+    String reasonText = safe(reason);
 
-    // 2) 회원활동 로그 INSERT
-    // memberActivityLogService.record(memberId, "WITHDRAW", reason, ip, ua);
+    // 1) 탈퇴 이력
+    // reasonCode가 따로 없으니 null로 두고, reasonText에 저장
+    memberWithdrawService.record(memberId, null, reasonText);
+
+    // 2) 활동 로그
+    activityLogService.record(memberId, "WITHDRAW", reasonText, request);
   }
 }
+

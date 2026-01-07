@@ -4,6 +4,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import dev.jpa.team2.tool.HandlerMdcInterceptor;
+
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
@@ -24,7 +28,17 @@ public class WebConfig implements WebMvcConfigurer {
               .allowedHeaders("*")
               .allowCredentials(true); // Cookie 사용
   }
+  private final HandlerMdcInterceptor handlerMdcInterceptor;
 
+  public WebConfig(HandlerMdcInterceptor handlerMdcInterceptor) {
+      this.handlerMdcInterceptor = handlerMdcInterceptor;
+  }
+
+  @Override
+  public void addInterceptors(InterceptorRegistry registry) {
+      registry.addInterceptor(handlerMdcInterceptor)
+              .addPathPatterns("/**");
+  }
   
   
 }

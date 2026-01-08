@@ -1,20 +1,19 @@
 package dev.jpa.team2.chatbot.rag;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import dev.jpa.team2.chatbot.EmbeddingSimilarityService;
 import dev.jpa.team2.chatbot.FastApiLlmService;
 import dev.jpa.team2.chatbot.dataref.ChatDataRefRepository;
-import dev.jpa.team2.chatbot.embeddingchunk.EmbeddingChunkDto;
 import dev.jpa.team2.chatbot.message.ChatMessage;
 import dev.jpa.team2.chatbot.message.ChatMessageService;
-import dev.jpa.team2.chatbot.messageref.ChatMessageRef;
-import dev.jpa.team2.chatbot.messageref.ChatMessageRefRepository;
-import dev.jpa.team2.chatbot.ragblocked.ChatRagBlockedChunkRepository;
+import dev.jpa.team2.chatbot.session.ChatSession;
 import dev.jpa.team2.chatbot.session.ChatSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,18 +26,10 @@ public class ChatRagService {
     private final ChatSessionService chatSessionService;
     private final ChatMessageService chatMessageService;
     private final ChatDataRefRepository chatDataRefRepository;
-    private final ChatMessageRefRepository chatMessageRefRepository;
     private final ChatRagRepository ragRepository;
-
     private final FastApiLlmService llmService;
-    private final EmbeddingSimilarityService similarityService;
 
-    private final ChatRagBlockedChunkRepository blockedChunkRepo;
-
-    private static final int TOP_K = 5;
-
-    // 후보 확장 검색 상한 (너무 크게 하면 비용↑)
-    private static final int MAX_CANDIDATE_K = TOP_K * 20; // 100
+    private static final int DEFAULT_TOP_K = 5;
 
     @Transactional
     public ChatRagDto ask(ChatRagDto dto, Long memberId) {
@@ -46,163 +37,129 @@ public class ChatRagService {
         Long sessionId = dto.getSessionId();
         String question = dto.getQuestion();
 
-        // 세션 소유권 체크
+        // 0) 기본 검증
+        if (sessionId == null) throw new IllegalArgumentException("sessionId is required");
+        if (question == null || question.isBlank()) throw new IllegalArgumentException("question is required");
+
+        // 1) 세션 소유권 체크
         chatSessionService.requireOwnedSession(memberId, sessionId);
 
-        // 1) 사용자 메시지 저장
+        // 2) 사용자 메시지 저장
         chatMessageService.saveMessage(memberId, sessionId, "USER", question);
 
-        // 2) 세션 컨텍스트(ChatDataRef) 구성
+        // 3) 세션 컨텍스트(ChatDataRef) 구성
         String sessionContext = chatDataRefRepository
             .findByMemberIdAndSessionIdOrderByCreatedAtDesc(memberId, sessionId)
             .stream()
             .map(ref -> String.format("[%s] %s\n%s", ref.getRefType(), ref.getTitle(), ref.getSummary()))
             .collect(Collectors.joining("\n\n"));
 
-        // 3) 질문 임베딩
-        List<Double> queryVector = llmService.embedding(question);
+        // 4) ✅ Python /ask 호출 (answer + references + followUpQuestions)
+        Map<String, Object> py = llmService.ask(
+            question,
+            sessionContext,
+            DEFAULT_TOP_K,
+            null, // docType 필요하면 dto에 필드 추가해서 넘기면 됨
+            null  // stage 필요하면 dto에 필드 추가해서 넘기면 됨
+        );
 
-        // 4) ✅ 차단 chunk 목록
-        List<Long> blockedIds = blockedChunkRepo.findActiveChunkIds();
-        Set<Long> blockedSet = new HashSet<>(blockedIds);
+        // 5) 응답 파싱
+        String answer = safeString(py, "answer");
+        if (answer == null || answer.isBlank()) answer = "(답변 없음)";
 
-        // 5) ✅ “부족하면 더 뽑아 채우기” (확장 검색 루프)
-        List<EmbeddingChunkDto.SearchResult> topChunks =
-            searchTopKWithBlockRetry(queryVector, blockedSet, TOP_K);
+        List<RagReferenceDto> references = parseReferences(py);
+        List<String> followUps = parseFollowUps(py);
 
-        log.info("[RagService] blocked={} topChunks={} sessionId={}",
-            blockedSet.size(), topChunks.size(), sessionId);
+        // 6) (옵션) RAG 결과 테이블 저장
+        try {
+            ragRepository.save(new ChatRag(sessionId, question, answer));
+        } catch (Exception e) {
+            // 저장 실패가 전체 응답을 죽이면 UX가 너무 나빠서 방어
+            log.warn("[ChatRagService] ragRepository.save failed (ignored) sessionId={}", sessionId, e);
+        }
 
-        // 6) RAG context 만들기
-        String ragContext = topChunks.stream()
-            .map(EmbeddingChunkDto.SearchResult::getChunkText)
-            .collect(Collectors.joining("\n\n"));
-
-        String finalContext =
-            "=== [세션 참고자료: 업로드/분석 결과 요약] ===\n" +
-            (sessionContext == null || sessionContext.isBlank() ? "(없음)" : sessionContext) +
-            "\n\n=== [RAG 검색 참고자료] ===\n" +
-            (ragContext == null || ragContext.isBlank() ? "(없음)" : ragContext);
-
-        // 7) LLM 호출
-        String answer = llmService.chat(finalContext, question);
-
-        // (옵션) RAG 결과 테이블 저장
-        ragRepository.save(new ChatRag(sessionId, question, answer));
-
-        // 8) 어시스턴트 메시지 저장
-        ChatMessage assistantMsg = chatMessageService.saveMessage(memberId, sessionId, "ASSISTANT", answer);
+        // 7) assistant 메시지 저장
+        ChatMessage assistantMsg = chatMessageService.saveAssistantMessageWithFollowUps(
+            memberId, sessionId, answer, followUps
+        );
         Long assistantChatId = assistantMsg.getChatId();
 
-        // 9) ✅ chat_message_ref 저장: saveAll + distinct + rankNo
-        saveRefsBatch(assistantChatId, topChunks);
+        // 8) ✅ (핵심) 세션 제목 자동 생성/업데이트 (1~2턴 기준은 ensureTitleUpdated 내부에서 처리)
+        // - title이 "새 대화"일 때만, 메시지 수가 충분할 때만, 앞부분 1~2턴으로 /title 호출하도록 구현하는 게 베스트
+        try {
+            chatSessionService.ensureTitleUpdated(memberId, sessionId);
+        } catch (Exception e) {
+            // 제목 생성 실패가 응답을 깨면 UX가 나빠서 방어
+            log.warn("[ChatRagService] ensureTitleUpdated failed (ignored) sessionId={}", sessionId, e);
+        }
+
+        // 9) ✅ 최신 세션 title 조회해서 응답에 포함 (프론트에서 즉시 반영 가능)
+        String sessionTitle = null;
+        try {
+            ChatSession s = chatSessionService.requireOwnedSession(memberId, sessionId);
+            sessionTitle = (s.getTitle() == null || s.getTitle().isBlank()) ? "새 대화" : s.getTitle().trim();
+        } catch (Exception e) {
+            log.warn("[ChatRagService] load session title failed (ignored) sessionId={}", sessionId, e);
+            sessionTitle = "새 대화";
+        }
 
         // 10) 응답 세팅
         dto.setAnswer(answer);
-        dto.setReferences(topChunks);
+        dto.setReferences(references);
+        dto.setFollowUpQuestions(followUps);
         dto.setAssistantChatId(assistantChatId);
+        dto.setSessionTitle(sessionTitle);
+
         return dto;
     }
 
-    /**
-     * 차단 chunk 제외 + chunkId 중복 제외 + TOP_K 부족 시 후보 K를 늘려 재검색
-     */
-    private List<EmbeddingChunkDto.SearchResult> searchTopKWithBlockRetry(
-        List<Double> queryVector,
-        Set<Long> blockedSet,
-        int topK
-    ) {
-        // k = 20부터 시작해서 부족하면 40, 60... 늘림
-        int candidateK = Math.min(MAX_CANDIDATE_K, topK * 4);
-
-        List<EmbeddingChunkDto.SearchResult> result = List.of();
-
-        while (true) {
-            List<EmbeddingChunkDto.SearchResult> candidates =
-                similarityService.searchTopK(queryVector, candidateK);
-
-            // 더 이상 뽑을 게 없으면 종료
-            if (candidates == null || candidates.isEmpty()) {
-                return List.of();
-            }
-
-            // 순서 유지하면서 chunkId 기준 distinct + blocked 제외 + topK
-            LinkedHashMap<Long, EmbeddingChunkDto.SearchResult> uniq = new LinkedHashMap<>();
-            for (EmbeddingChunkDto.SearchResult r : candidates) {
-                if (r == null || r.getChunkId() == null) continue;
-                Long cid = r.getChunkId();
-                if (blockedSet.contains(cid)) continue;
-                uniq.putIfAbsent(cid, r);
-                if (uniq.size() >= topK) break;
-            }
-
-            result = new ArrayList<>(uniq.values());
-            if (result.size() >= topK) {
-                return result;
-            }
-
-            // 후보를 더 늘려도 candidates 자체가 부족하면(=더 이상 확장 불가) 종료
-            if (candidates.size() < candidateK) {
-                return result; // 가능한 만큼만 반환
-            }
-
-            // candidateK 확장
-            if (candidateK >= MAX_CANDIDATE_K) {
-                return result;
-            }
-            candidateK = Math.min(MAX_CANDIDATE_K, candidateK + topK * 4);
-        }
+    // -------------------------
+    // parsing helpers
+    // -------------------------
+    private String safeString(Map<String, Object> py, String key) {
+        if (py == null) return null;
+        Object v = py.get(key);
+        return v == null ? null : String.valueOf(v);
     }
 
-    /**
-     * ChatMessageRef를 rankNo 포함해서 saveAll로 한번에 저장.
-     * (CHAT_ID, CHUNK_ID) 유니크가 있어도, 이 로직은 chunk 중복을 먼저 제거해 안전.
-     */
-    private void saveRefsBatch(Long assistantChatId, List<EmbeddingChunkDto.SearchResult> topChunks) {
+    private List<RagReferenceDto> parseReferences(Map<String, Object> py) {
+        if (py == null) return Collections.emptyList();
 
-        if (topChunks == null || topChunks.isEmpty()) {
-            log.info("[RagService] refs skipped (empty) | chatId={}", assistantChatId);
-            return;
+        Object refObj = py.get("references");
+        if (!(refObj instanceof List<?> list)) return Collections.emptyList();
+
+        List<RagReferenceDto> refs = new ArrayList<>();
+        for (Object o : list) {
+            if (!(o instanceof Map<?, ?> m)) continue;
+
+            RagReferenceDto r = new RagReferenceDto();
+            Object cid = m.get("chunkId");
+            r.setChunkId(cid == null ? null : String.valueOf(cid));
+
+            Object title = m.get("title");
+            r.setTitle(title == null ? null : String.valueOf(title));
+
+            Object snippet = m.get("snippet");
+            r.setSnippet(snippet == null ? null : String.valueOf(snippet));
+
+            refs.add(r);
         }
+        return refs;
+    }
 
-        // rankNo는 “필터링된 결과 순서” 기준으로 1..k
-        int rankNo = 1;
+    private List<String> parseFollowUps(Map<String, Object> py) {
+        if (py == null) return Collections.emptyList();
 
-        // distinct(혹시 같은 chunkId가 들어오는 경우 대비)
-        LinkedHashMap<Long, EmbeddingChunkDto.SearchResult> uniq = new LinkedHashMap<>();
-        for (EmbeddingChunkDto.SearchResult r : topChunks) {
-            if (r == null || r.getChunkId() == null) continue;
-            uniq.putIfAbsent(r.getChunkId(), r);
+        Object fuObj = py.get("followUpQuestions");
+        if (!(fuObj instanceof List<?> list)) return Collections.emptyList();
+
+        List<String> out = new ArrayList<>();
+        for (Object o : list) {
+            if (o == null) continue;
+            String s = String.valueOf(o).trim();
+            if (!s.isBlank()) out.add(s);
+            if (out.size() >= 3) break;
         }
-
-        List<ChatMessageRef> refs = new ArrayList<>();
-        for (EmbeddingChunkDto.SearchResult r : uniq.values()) {
-            refs.add(ChatMessageRef.builder()
-                .chatId(assistantChatId)
-                .chunkId(r.getChunkId())
-                .rankNo(rankNo++)
-                .score(r.getSimilarityScore())
-                .build());
-        }
-
-        try {
-            chatMessageRefRepository.saveAll(refs);
-            log.info("[RagService] refs saveAll ok | chatId={} count={}", assistantChatId, refs.size());
-        } catch (Exception e) {
-            // saveAll 실패 시에도 전체 ask를 죽이지 않기 위해 안전화
-            log.error("[RagService] refs saveAll failed | chatId={} count={}", assistantChatId, refs.size(), e);
-
-            // (선택) fallback: 하나씩 저장 시도
-            int ok = 0, fail = 0;
-            for (ChatMessageRef ref : refs) {
-                try {
-                    chatMessageRefRepository.save(ref);
-                    ok++;
-                } catch (Exception ex) {
-                    fail++;
-                }
-            }
-            log.error("[RagService] refs fallback save | chatId={} ok={} fail={}", assistantChatId, ok, fail);
-        }
+        return out;
     }
 }

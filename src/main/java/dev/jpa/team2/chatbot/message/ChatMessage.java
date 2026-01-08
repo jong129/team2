@@ -21,7 +21,6 @@ public class ChatMessage {
     @Column(name = "CHAT_ID")
     private Long chatId;
 
-    // ✅ 추가: NOT NULL 컬럼이므로 엔티티에도 반드시 있어야 함
     @Column(name = "MEMBER_ID", nullable = false)
     private Long memberId;
 
@@ -53,7 +52,16 @@ public class ChatMessage {
     @Column(name = "DISLIKE_COUNT", nullable = false)
     private Integer dislikeCount = 0;
 
-    // ✅ 변경: memberId를 받도록 수정
+    // ✅ 추가: 추천 후속 질문 3개 저장 컬럼
+    @Column(name = "SUGGEST_Q1", length = 300)
+    private String suggestQ1;
+
+    @Column(name = "SUGGEST_Q2", length = 300)
+    private String suggestQ2;
+
+    @Column(name = "SUGGEST_Q3", length = 300)
+    private String suggestQ3;
+
     public static ChatMessage of(Long memberId, Long sessionId, String role, String content) {
         ChatMessage m = new ChatMessage();
         m.memberId = memberId;

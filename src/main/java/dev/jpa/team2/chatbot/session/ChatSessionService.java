@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
+import dev.jpa.team2.chatbot.FastApiLlmService;
 import dev.jpa.team2.chatbot.message.ChatMessage;
 import dev.jpa.team2.chatbot.message.ChatMessageRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class ChatSessionService {
 
     private final ChatSessionRepository sessionRepo;
     private final ChatMessageRepository messageRepo;
+    private final FastApiLlmService llmService;
     
     // 세션 생성
     public ChatSession createSession(Long memberId, String title) {
@@ -65,38 +67,41 @@ public class ChatSessionService {
     public void ensureTitleUpdated(Long memberId, Long sessionId) {
       ChatSession session = requireOwnedSession(memberId, sessionId);
 
-      String cur = session.getTitle();
-      // 이미 제목이 있고 "새 대화"가 아니면 갱신 안 함
-      if (cur != null && !cur.trim().isBlank() && !"새 대화".equals(cur.trim())) {
-          return;
-      }
+      String cur = (session.getTitle() == null) ? "" : session.getTitle().trim();
+      if (!cur.isBlank() && !"새 대화".equals(cur)) return;
 
-      List<ChatMessage> msgs = messageRepo.findBySessionIdOrderByCreatedAtAsc(sessionId);
+      // ✅ 1턴 기준(유저+AI): 메시지 2개 이상이면 생성
+      long cnt = messageRepo.countBySessionId(sessionId);
+      if (cnt < 2) return;
+
+      // ✅ 앞 1~2턴만 사용(최대 4개 메시지)
+      List<ChatMessage> msgs = messageRepo.findTop4BySessionIdOrderByCreatedAtAsc(sessionId);
       if (msgs == null || msgs.isEmpty()) return;
 
-      ChatMessage firstUser = null;
+      StringBuilder sb = new StringBuilder();
       for (ChatMessage m : msgs) {
-          if ("user".equalsIgnoreCase(m.getRole())) {
-              firstUser = m;
-              break;
-          }
+          String role = (m.getRole() == null) ? "" : m.getRole().trim();
+          String content = (m.getContent() == null) ? "" : m.getContent().trim();
+          if (content.isEmpty()) continue;
+
+          String tag = "USER".equalsIgnoreCase(role) ? "USER" : "AI";
+          sb.append(tag).append(": ").append(content).append("\n");
       }
-      if (firstUser == null) return;
+      String raw = sb.toString().trim();
+      if (raw.isEmpty()) return;
 
-      String content = firstUser.getContent();
-      if (content == null) return;
-      content = content.trim();
-      if (content.isEmpty()) return;
+      String title = llmService.makeTitle(raw);
+      if (title == null) return;
 
-      // 제목 가공: 공백 정리 + 길이 제한
-      String title = content.replaceAll("\\s+", " ");
-      if (title.length() > 25) title = title.substring(0, 25);
+      title = title.replaceAll("[\"'\\.]", "").replaceAll("\\s+", " ").trim();
+      if (title.isEmpty()) return;
+      if (title.length() > 25) title = title.substring(0, 25).trim();
 
       session.setTitle(title);
       sessionRepo.save(session);
 
       log.info("[ChatSessionService] ensureTitleUpdated ok | memberId={} sessionId={} title={}",
-              memberId, sessionId, title);
+          memberId, sessionId, title);
   }
 
 

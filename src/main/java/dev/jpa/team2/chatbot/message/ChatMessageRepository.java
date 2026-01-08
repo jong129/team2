@@ -33,5 +33,9 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
         GROUP BY m.sessionId
         """)
     List<Object[]> countBySessionIds(@Param("sessionIds") List<Long> sessionIds);
+    
+    long countBySessionId(Long sessionId);
+
+    List<ChatMessage> findTop4BySessionIdOrderByCreatedAtAsc(Long sessionId);
 
 }

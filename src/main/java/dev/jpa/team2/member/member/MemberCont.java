@@ -18,7 +18,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import dev.jpa.team2.admin.LoginHistoryService;
 
 import dev.jpa.team2.member.member_role.MemberRoleRepository;
@@ -129,6 +132,19 @@ public class MemberCont {
     }
 
     return ResponseEntity.ok(cnt);
+  }
+  
+  // 로그아웃
+  @PostMapping("/logout")
+  public ResponseEntity<?> logout(HttpSession session, HttpServletResponse response) {
+    session.invalidate();
+
+    Cookie cookie = new Cookie("JSESSIONID", null);
+    cookie.setMaxAge(0);
+    cookie.setPath("/");
+    response.addCookie(cookie);
+
+    return ResponseEntity.ok(Map.of("success", true, "message", "로그아웃 되었습니다."));
   }
 
   /**

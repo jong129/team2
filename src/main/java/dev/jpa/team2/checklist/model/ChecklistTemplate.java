@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "CHECKLIST_TEMPLATE")
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
@@ -88,4 +89,11 @@ public class ChecklistTemplate {
      */
     @Column(name = "UPDATED_AT", nullable = false)
     private LocalDateTime updatedAt;
+    
+    public void changeStatus(TemplateStatus status) {
+      this.status = status;
+      this.updatedAt = java.time.LocalDateTime.now();
+    }
+
+
 }

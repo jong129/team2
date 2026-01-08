@@ -71,14 +71,12 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
   /* ==================================================
    * 6) 로그인 성공 처리
    * ================================================== */
-
   @Transactional
   @Modifying
   @Query(value = """
       UPDATE MEMBER
       SET
           FAILED_LOGIN_COUNT = 0,
-          STATUS = 'ACTIVE',
           LAST_LOGIN_AT = SYSDATE
       WHERE MEMBER_ID = :memberId
       """, nativeQuery = true)
@@ -246,5 +244,19 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
   int withdraw(
       @Param("memberId") Long memberId
   );
-  
+  /* ==================================================
+   * (관리자) 탈퇴 회원 복구
+   * ================================================== */
+  @Transactional
+  @Modifying
+  @Query(value = """
+      UPDATE MEMBER
+      SET
+          STATUS = 'ACTIVE',
+          UPDATED_AT = SYSDATE
+      WHERE MEMBER_ID = :memberId
+        AND STATUS = 'WITHDRAWN'
+      """, nativeQuery = true)
+  int restore(@Param("memberId") Long memberId);
+
 }

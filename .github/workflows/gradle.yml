@@ -50,7 +50,7 @@ jobs:
     # - name: Build with Gradle 8.9
     #   run: gradle build
 
-    # gCloud setting
+    # gCloud setting2
     - name: executing remote ssh commands using ssh key
       uses: appleboy/ssh-action@v0.1.10
       with:

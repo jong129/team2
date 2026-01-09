@@ -71,6 +71,24 @@ public class AdminService {
   public void deleteLoginHistory(Long historyId) {
     loginHistoryRepository.deleteById(historyId);
   }
+  @Service
+  @Transactional
+  public class AdminMemberService {
+
+    private final MemberRepository memberRepository;
+
+    public AdminMemberService(MemberRepository memberRepository) {
+      this.memberRepository = memberRepository;
+    }
+
+    public void restoreMember(Long memberId) {
+      int cnt = memberRepository.restore(memberId);
+      if (cnt != 1) {
+        throw new IllegalStateException("복구 실패(이미 복구됨/회원없음/상태 불일치)");
+      }
+    }
+  }
+
 }
 
 

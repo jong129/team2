@@ -71,14 +71,12 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
   /* ==================================================
    * 6) 로그인 성공 처리
    * ================================================== */
-
   @Transactional
   @Modifying
   @Query(value = """
       UPDATE MEMBER
       SET
           FAILED_LOGIN_COUNT = 0,
-          STATUS = 'ACTIVE',
           LAST_LOGIN_AT = SYSDATE
       WHERE MEMBER_ID = :memberId
       """, nativeQuery = true)
@@ -213,5 +211,52 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
       """,
       nativeQuery = true)
   Page<AdminMemberListDto> searchAdminMembers(String keyword, Pageable pageable);
+
+  /* ==================================================
+   * 14) (마이페이지) 이름만 변경
+   * ================================================== */
+  @Transactional
+  @Modifying
+  @Query(value = """
+      UPDATE MEMBER
+      SET
+          NAME = :name,
+          UPDATED_AT = SYSDATE
+      WHERE MEMBER_ID = :memberId
+      """, nativeQuery = true)
+  int updateName(
+      @Param("memberId") Long memberId,
+      @Param("name") String name
+  );
+
+  /* ==================================================
+   * 15) (마이페이지) 회원탈퇴 (상태변경)
+   * ================================================== */
+  @Transactional
+  @Modifying
+  @Query(value = """
+      UPDATE MEMBER
+      SET
+          STATUS = 'WITHDRAWN',
+          UPDATED_AT = SYSDATE
+      WHERE MEMBER_ID = :memberId
+      """, nativeQuery = true)
+  int withdraw(
+      @Param("memberId") Long memberId
+  );
+  /* ==================================================
+   * (관리자) 탈퇴 회원 복구
+   * ================================================== */
+  @Transactional
+  @Modifying
+  @Query(value = """
+      UPDATE MEMBER
+      SET
+          STATUS = 'ACTIVE',
+          UPDATED_AT = SYSDATE
+      WHERE MEMBER_ID = :memberId
+        AND STATUS = 'WITHDRAWN'
+      """, nativeQuery = true)
+  int restore(@Param("memberId") Long memberId);
 
 }

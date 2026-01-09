@@ -5,6 +5,8 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import dev.jpa.team2.member.member.Member;
+
 public interface EmailVerificationRepository
         extends JpaRepository<EmailVerification, Long> {
 
@@ -16,4 +18,9 @@ public interface EmailVerificationRepository
     );
 
     boolean existsByEmailAndVerifiedYn(String email, String verifiedYn);
+
+    Optional<EmailVerification> findByEmailAndLoginId(
+        String email,
+        String loginId
+    );
 }

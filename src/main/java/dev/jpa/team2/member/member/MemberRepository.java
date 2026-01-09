@@ -1,12 +1,17 @@
 package dev.jpa.team2.member.member;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import dev.jpa.team2.admin.AdminMemberListDto;
+
 
 // Long: 식별자(PK) 타입
 public interface MemberRepository extends JpaRepository<Member, Long> {
@@ -41,7 +46,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
   public Member findByMemberId(Long memberId);
 
   /** 로그인 ID 조회 */
-  public Member findByLoginId(String loginId);
+  Optional<Member> findByLoginId(String loginId);
 
   /** 이메일 조회 */
   public Member findByEmail(String email);
@@ -49,6 +54,8 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
   /** 이름 + 이메일로 회원 조회 (아이디 찾기용) */
   public java.util.Optional<Member> findByNameAndEmail(String name, String email);
   
+  /** 로그인ID + 이메일로 회원 조회 (비밀번호 재설정용) */
+  Optional<Member> findByLoginIdAndEmail(String loginId, String email);
   /* ==================================================
    * 5) 로그인 (ID 또는 EMAIL)
    * ================================================== */
@@ -178,4 +185,33 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
       ORDER BY MEMBER_ID DESC
       """, nativeQuery = true)
   public List<Member> searchByNameOrEmail(@Param("keyword") String keyword);
+
+  /* ==================================================
+   * 13) (관리자) 회원조회 - 검색 + 페이징
+   * ================================================== */
+  @Query(value = """
+      SELECT
+          MEMBER_ID  AS memberId,
+          LOGIN_ID   AS loginId,
+          NAME       AS name,
+          EMAIL      AS email
+      FROM MEMBER
+      WHERE (?1 IS NULL OR ?1 = ''
+         OR LOGIN_ID LIKE '%' || ?1 || '%'
+         OR NAME     LIKE '%' || ?1 || '%'
+         OR EMAIL    LIKE '%' || ?1 || '%'
+      )
+      """,
+      countQuery = """
+      SELECT COUNT(*)
+      FROM MEMBER
+      WHERE (?1 IS NULL OR ?1 = ''
+         OR LOGIN_ID LIKE '%' || ?1 || '%'
+         OR NAME     LIKE '%' || ?1 || '%'
+         OR EMAIL    LIKE '%' || ?1 || '%'
+      )
+      """,
+      nativeQuery = true)
+  Page<AdminMemberListDto> searchAdminMembers(String keyword, Pageable pageable);
+
 }

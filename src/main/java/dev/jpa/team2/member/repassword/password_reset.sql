@@ -37,4 +37,8 @@ CREATE SEQUENCE SEQ_PASSWORD_RESET_ID
     NOCYCLE
     NOCACHE;
 
+SELECT sequence_name
+FROM user_sequences
+WHERE sequence_name = 'SEQ_PASSWORD_RESET_ID';
+
 commit;

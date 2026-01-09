@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.HashMap;
 
 import dev.jpa.team2.tool.BusinessException;
-import dev.jpa.team2.tool.Code;
+import dev.jpa.team2.tool.ErrorCode;
 import dev.jpa.team2.tool.LLMRequestConfig;
 import dev.jpa.team2.tool.Tool;
 import dev.jpa.team2.tool.Upload;
@@ -37,21 +37,22 @@ public class DocumentsCont {
   @PostMapping("/analyze")
   public ResponseEntity<String> analyze(@ModelAttribute DocumentsDTO documentsDTO) {
 
-      MDC.put("path", "/documents/analyze");
-      MDC.put("method", "DocumentsController.analyze");
 
       MultipartFile mf = documentsDTO.getFile1MF();
+      Number userId = documentsDTO.getUserId();
+
+      log.info("문서 분석 요청 수신 userId={}", userId);
       log.info("문서 분석 요청 수신");
 
       if (mf == null || mf.isEmpty()) {
-          throw new BusinessException(Code.FILE_MISSING);
+          throw new BusinessException(ErrorCode.FILE_MISSING);
       }
 
       try {
           String upDir = Tool.getServerDir("documents");
           String savedFilename = Upload.saveFile(mf, upDir);
 
-          String url = "http://localhost:8000/document/analyze";
+          String url = "http://121.160.42.81:8000/document/analyze";
           log.info("[FASTAPI] 요청 시작 url={}", url);
 
           HttpHeaders headers = new HttpHeaders();
@@ -59,6 +60,7 @@ public class DocumentsCont {
 
           Map<String, Object> body = new HashMap<>();
           body.put("SpringBoot_FastAPI_KEY", llmRequestConfig.getSpringBoot_FastAPI_KEY());
+          body.put("userId", userId);
           body.put("image_path", savedFilename);
 
           HttpEntity<Map<String, Object>> requestEntity =
@@ -68,12 +70,12 @@ public class DocumentsCont {
                   .postForObject(url, requestEntity, String.class);
 
           log.info("[FASTAPI] 응답 수신");
-
+          documentsService.save(documentsDTO);
           return ResponseEntity.ok(response);
 
       } catch (RestClientException e) {
           throw new BusinessException(
-                  Code.FASTAPI_ERROR,
+                  ErrorCode.FASTAPI_ERROR,
                   "FastAPI 호출 실패: " + e.getMessage(),
                   e
           );

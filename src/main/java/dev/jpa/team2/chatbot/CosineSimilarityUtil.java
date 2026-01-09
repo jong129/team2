@@ -5,29 +5,26 @@ import java.util.List;
 
 public class CosineSimilarityUtil {
 
-    /**
-     * "[0.1, 0.2, -0.3]" → List<Double>
-     */
-    public static List<Double> parseVector(String vectorString) {
+    /** "[0.1, 0.2, -0.3]" → List<Double> */
+  public static List<Double> parseVector(String vectorString) {
+    if (vectorString == null) return List.of();
 
-        String cleaned = vectorString
-                .replace("[", "")
-                .replace("]", "")
-                .trim();
+    String cleaned = vectorString.replace("[", "").replace("]", "").trim();
+    if (cleaned.isEmpty()) return List.of();
 
-        String[] tokens = cleaned.split(",");
+    String[] tokens = cleaned.split(",");
 
-        List<Double> vector = new ArrayList<>();
-        for (String token : tokens) {
-            vector.add(Double.parseDouble(token.trim()));
-        }
-
-        return vector;
+    List<Double> vector = new ArrayList<>();
+    for (String token : tokens) {
+        String t = token.trim();
+        if (t.isEmpty()) continue;
+        vector.add(Double.parseDouble(t));
     }
+    return vector;
+  }
 
-    /**
-     * cosine similarity 계산
-     */
+
+    /** cosine similarity 계산 */
     public static double cosineSimilarity(
             List<Double> v1,
             List<Double> v2) {

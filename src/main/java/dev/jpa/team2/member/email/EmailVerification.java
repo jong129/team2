@@ -24,6 +24,12 @@ public class EmailVerification {
     @Column(name = "EMAIL", nullable = false, unique = true)
     private String email;
 
+    /* ===============================
+       🔥 비밀번호 찾기용 (회원가입은 null)
+    =============================== */
+    @Column(name = "LOGIN_ID")
+    private String loginId;
+
     @Column(name = "VERIFY_CODE", nullable = false)
     private String verifyCode;
 
@@ -62,14 +68,25 @@ public class EmailVerification {
         this.verifiedYn = "Y";
         this.verifiedAt = new Date();
     }
-    
-    public void updateCode(String verifyCode, Date expiresAt) {
-      this.verifyCode = verifyCode;
-      this.expiresAt = expiresAt;
-      this.verifiedYn = "N";
-      this.verifiedAt = null;
-  }
 
+    public void resetVerified() {
+        this.verifiedYn = "N";
+        this.verifiedAt = null;
+    }
+
+    public void updateCode(String verifyCode, Date expiresAt) {
+        this.verifyCode = verifyCode;
+        this.expiresAt = expiresAt;
+        this.verifiedYn = "N";
+        this.verifiedAt = null;
+    }
+
+    /* ===============================
+       비밀번호 찾기 전용 setter
+    =============================== */
+    public void setLoginId(String loginId) {
+        this.loginId = loginId;
+    }
 
     /* ===== getter ===== */
 
@@ -79,6 +96,10 @@ public class EmailVerification {
 
     public String getEmail() {
         return email;
+    }
+
+    public String getLoginId() {
+        return loginId;
     }
 
     public String getVerifyCode() {

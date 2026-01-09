@@ -1,0 +1,120 @@
+package dev.jpa.team2.checklist.pre;
+
+import lombok.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+public class PreChecklistDTO {
+
+    /**
+     * 체크리스트 항목 응답 DTO
+     */
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ItemRes {
+        private Long itemId;
+        private Integer itemOrder;
+        private String checkArea;
+        private String title;
+        private String description;
+    }
+
+    /**
+     * 사전 체크리스트 전체 응답 DTO
+     */
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class PreChecklistRes {
+        private Long templateId;
+        private String templateName;
+        private List<ItemRes> items;
+    }
+    
+    /**
+     * 사전 체크리스트 세션 시작/조회 응답 DTO
+     */
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SessionRes {
+        private Long sessionId;
+        private Long templateId;
+        private String status; // IN_PROGRESS / COMPLETED
+        
+        // ✅ 추가
+        private boolean reused;       // 진행중 세션을 재사용했는지
+        private boolean hasProgress;  // 체크 응답이 1개라도 있는지
+    }
+
+    /**
+     * 체크 상태 업데이트 요청 DTO
+     */
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class UpdateItemReq {
+        private String checkStatus; // DONE / NOT_DONE / NOT_REQUIRED
+    }
+
+    /**
+     * (D) 요약/경고 응답 DTO
+     */
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SummaryRes {
+        private int totalCount;
+        private int doneCount;
+
+        private int requiredNotDoneCount;
+        private List<WarnItem> requiredNotDoneItems;
+
+        private String level;   // INFO / WARN / DANGER
+        private String message; // 안내/권고/경고 문구
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class WarnItem {
+        private Long itemId;
+        private String title;
+    }
+    
+    /**
+     * (F) 세션의 항목별 체크 상태 응답 DTO (이어하기용)
+     */
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ItemStatusRes {
+        private Long itemId;
+        private String checkStatus; // DONE / NOT_DONE / NOT_REQUIRED
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SessionHistoryItem {
+        private Long sessionId;
+        private Long templateId;
+        private String templateName; // optional (조인하거나 template에서 꺼내면 됨)
+        private String status;       // IN_PROGRESS / COMPLETED
+
+        private LocalDateTime startedAt;   // ✅ 변경
+        private LocalDateTime completedAt; // ✅ 변경
+
+    }
+
+    
+}

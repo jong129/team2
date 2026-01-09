@@ -1,0 +1,2 @@
+Manifest-Version: 1.0
+Main-Class: dev.jpa.team2.Team2Application

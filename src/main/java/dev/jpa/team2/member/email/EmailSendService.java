@@ -14,7 +14,7 @@ public class EmailSendService {
     }
 
     /* ===============================
-       인증 메일 발송
+       회원가입 인증 메일 발송
     =============================== */
     public void sendVerificationMail(String toEmail, String verifyCode) {
 
@@ -25,6 +25,24 @@ public class EmailSendService {
             "회원가입을 위한 인증번호입니다.\n\n" +
             "인증번호: " + verifyCode + "\n\n" +
             "해당 인증번호는 5분간 유효합니다."
+        );
+
+        mailSender.send(message);
+    }
+
+    /* ===============================
+       비밀번호 재설정 인증 메일 발송 (🔥 추가)
+    =============================== */
+    public void sendPasswordResetVerificationMail(String toEmail, String verifyCode) {
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(toEmail);
+        message.setSubject("[비밀번호 재설정 인증번호]");
+        message.setText(
+            "비밀번호 재설정을 위한 인증번호입니다.\n\n" +
+            "인증번호: " + verifyCode + "\n\n" +
+            "해당 인증번호는 5분간 유효합니다.\n\n" +
+            "본인이 요청하지 않았다면 이 메일을 무시해 주세요."
         );
 
         mailSender.send(message);

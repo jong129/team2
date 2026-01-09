@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- 콘솔 로그 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>
+                %d{yyyy-MM-dd HH:mm:ss} %-5level
+                [%X{path}]
+                [%X{method}]
+                [%X{Errorcode}]
+                %logger - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <!-- 전체 로그 레벨 -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+</configuration>

@@ -153,8 +153,9 @@ public class MemberCont {
   @PostMapping(path = "/login")
   public ResponseEntity<Map<String, Object>> login(
       @RequestParam(name = "loginInput", defaultValue = "") String loginInput,
-      @RequestParam(name = "password", defaultValue = "") String password, HttpSession session,
-      HttpServletRequest request // ✅ 추가
+      @RequestParam(name = "password", defaultValue = "") String password,
+      HttpSession session,
+      HttpServletRequest request
   ) {
 
     Map<String, Object> map = new HashMap<>();
@@ -163,7 +164,16 @@ public class MemberCont {
 
     if (member == null) {
       map.put("cnt", 0); // 아이디/이메일 없음
-      // ❗ MEMBER_ID가 없어서 LOGIN_HISTORY 저장 불가 (FK + NOT NULL)
+      return ResponseEntity.ok(map);
+    }
+
+    // ✅ 탈퇴 계정 차단 (가장 먼저)
+    if ("WITHDRAWN".equals(member.getStatus())) {
+      // 실패 로그 남기고 싶으면 유지
+      loginHistoryService.record(member.getMemberId(), false, request);
+
+      map.put("cnt", 4);
+      map.put("message", "탈퇴 처리된 계정입니다. 관리자에게 문의하세요.");
       return ResponseEntity.ok(map);
     }
 
@@ -180,8 +190,7 @@ public class MemberCont {
 
     // 계정 잠금
     if ("LOCKED".equals(member.getStatus())) {
-
-      // ✅ 잠금 상태도 로그인 실패로 기록(원하면 빼도 됨)
+      // ✅ 잠금 상태도 로그인 실패로 기록
       loginHistoryService.record(member.getMemberId(), false, request);
 
       map.put("cnt", 3);
@@ -192,16 +201,16 @@ public class MemberCont {
     memberService.loginSuccess(member.getMemberId());
 
     session.setAttribute("LOGIN_MEMBER_ID", member.getMemberId());
-    
+
     // roles 조회
     List<String> roles = memberRoleRepository.findRoleNamesByMemberId(member.getMemberId());
 
     // 세션에도 저장(백엔드 관리자 API 보호용)
-    session.setAttribute("LOGIN_ROLES", roles);  
-    map.put("cnt", 1); // 로그인 성공
+    session.setAttribute("LOGIN_ROLES", roles);
 
     // ✅ 성공 로그 저장
     loginHistoryService.record(member.getMemberId(), true, request);
+
     map.put("cnt", 1);
     map.put("memberId", member.getMemberId());
     map.put("loginId", member.getLoginId());
@@ -210,6 +219,7 @@ public class MemberCont {
 
     return ResponseEntity.ok(map);
   }
+
 
   /**
    * 아이디 찾기

@@ -2,7 +2,9 @@ package dev.jpa.team2.admin;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Map;
 
+import dev.jpa.team2.admin.AdminService.AdminMemberService;
 import dev.jpa.team2.admin.activity.ActivityLogService;
 import dev.jpa.team2.admin.password.PasswordChangeHistoryService;
 import dev.jpa.team2.admin.update.MemberUpdateHistoryService;
@@ -311,5 +313,49 @@ public class AdminController {
 
     int deleted = memberWithdrawService.purgeByPeriod(toFromAt(from), toExclusive(to));
     return ResponseEntity.ok(deleted);
+  }
+  @RestController
+  @RequestMapping("/api/admin")
+  public class AdminMemberController {
+
+    private final AdminMemberService adminMemberService;
+
+    public AdminMemberController(AdminMemberService adminMemberService) {
+      this.adminMemberService = adminMemberService;
+    }
+
+    @PostMapping("/members/{memberId}/restore")
+    public ResponseEntity<?> restore(
+        @PathVariable("memberId") Long memberId,
+        HttpSession session
+    ) {
+      // 관리자 권한 체크(네 AdminController의 checkAdmin 재사용 불가하니 여기서 간단히)
+      Object loginMemberId = session.getAttribute("LOGIN_MEMBER_ID");
+      if (loginMemberId == null) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            .body(Map.of("success", false, "message", "로그인이 필요합니다."));
+      }
+
+      // memberRoleService를 여기서 쓰려면 외부 클래스 필드 접근이 애매할 수 있어
+      // 그래서 AdminMemberService 내부에서 권한체크를 하거나,
+      // 최소한 여기서는 기존 세션 roles로 체크하는 방식으로 가는 게 안전함.
+      Object rolesObj = session.getAttribute("LOGIN_ROLES");
+      if (rolesObj == null) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            .body(Map.of("success", false, "message", "관리자 권한이 없습니다."));
+      }
+
+      @SuppressWarnings("unchecked")
+      java.util.List<String> roles = (java.util.List<String>) rolesObj;
+
+      if (!roles.contains("ADMIN")) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            .body(Map.of("success", false, "message", "관리자 권한이 없습니다."));
+      }
+
+      adminMemberService.restoreMember(memberId);
+      return ResponseEntity.ok(Map.of("success", true, "message", "복구 완료"));
+    }
+
   }
 }

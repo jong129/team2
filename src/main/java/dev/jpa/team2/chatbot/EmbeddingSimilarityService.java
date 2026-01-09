@@ -4,8 +4,8 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import dev.jpa.team2.chatbot.embeddingchunk.EmbeddingChunkDto;
-import dev.jpa.team2.chatbot.embeddingchunk.EmbeddingChunkRepository;
+import dev.jpa.team2.chatbot.domain.embeddingchunk.EmbeddingChunkDto;
+import dev.jpa.team2.chatbot.domain.embeddingchunk.EmbeddingChunkRepository;
 import lombok.RequiredArgsConstructor;
 
 @Service

@@ -7,6 +7,7 @@ import dev.jpa.team2.member.member.Member;
 import dev.jpa.team2.member.member.MemberRepository;
 import dev.jpa.team2.member.member_role.MemberRoleService;
 import dev.jpa.team2.tool.PageResponse;
+import dev.jpa.team2.board.like.BoardLikeRepository;
 
 import java.time.LocalDateTime;
 
@@ -27,6 +28,7 @@ public class BoardPostService {
   private final BoardPostRepository boardPostRepository;
   private final BoardCategoryRepository boardCategoryRepository;
   private final MemberRoleService memberRoleService;
+  private final BoardLikeRepository boardLikeRepository;
 
   // ✅ 추가
   private final MemberRepository memberRepository;
@@ -47,7 +49,6 @@ public class BoardPostService {
     BoardPost post = boardPostRepository.findByBoardIdAndDeletedYn(boardId, "N")
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "post not found"));
 
-    // 비밀글 접근 제어(작성자 or 관리자만)
     if ("Y".equals(post.getSecretYn())) {
       if (loginMemberId == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "login required");
       boolean isAdmin = memberRoleService.isAdmin(loginMemberId);
@@ -61,7 +62,26 @@ public class BoardPostService {
     BoardPost refreshed = boardPostRepository.findByBoardIdAndDeletedYn(boardId, "N")
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "post not found"));
 
-    return BoardPostDto.from(refreshed);
+    BoardPostDto dto = BoardPostDto.from(refreshed);
+
+    // ✅ 좋아요 기능이 카테고리에서 꺼져있으면, UI도 숨길 거라 값은 안전하게 N/0
+    // (원하면 실제 count를 내려도 되지만, 기능 off면 보통 0/N이 깔끔)
+    if (!"Y".equalsIgnoreCase(refreshed.getCategory().getLikeYn())) {
+      dto.setLikeCnt(0L);
+      dto.setLikedYn("N");
+      return dto;
+    }
+
+    long likeCnt = boardLikeRepository.countByBoardId(boardId);
+    String likedYn = "N";
+    if (loginMemberId != null) {
+      likedYn = boardLikeRepository.existsByBoardIdAndMemberId(boardId, loginMemberId) ? "Y" : "N";
+    }
+
+    dto.setLikeCnt(likeCnt);
+    dto.setLikedYn(likedYn);
+
+    return dto;
   }
 
   public BoardPostDto create(Long loginMemberId, String loginId, String writerName, BoardPostCreateRequest req) {

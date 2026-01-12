@@ -28,8 +28,13 @@ public class MemberRoleService {
   }
 
   /** 관리자 여부 */
+  /** 관리자 여부 */
   public boolean isAdmin(Long memberId) {
-    return memberRoleRepository.isAdmin(memberId) > 0;
+    if (memberId == null)
+      return false;
+
+    Integer cnt = memberRoleRepository.isAdmin(memberId); // 여기 타입이 Long이면 Long으로
+    return cnt != null && cnt > 0;
   }
 
   /** 권한 전체 삭제 */

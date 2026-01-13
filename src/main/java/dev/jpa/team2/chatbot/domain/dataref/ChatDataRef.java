@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import jakarta.persistence.*;
 import lombok.*;
 
+// 문서 분석 결과/체크리스트 결과 같은 컨텍스트 요약을 특정 세션(sessionId)에 붙여 저장하는 테이블 매핑
+
 @Entity
 @Table(name = "CHAT_DATA_REF")
 @Getter @Setter
@@ -38,7 +40,7 @@ public class ChatDataRef {
     @Column(name = "CREATED_AT", nullable = false)
     private LocalDateTime createdAt;
 
-    @PrePersist
+    @PrePersist // 저장 직전에 createdAt이 비어 있으면 현재시간 자동 세팅
     void onCreate() {
         if (createdAt == null) createdAt = LocalDateTime.now();
     }

@@ -21,7 +21,7 @@ public class ChatSessionCont {
 
     private final ChatSessionService sessionService;
 
-    // ✅ (추가/수정) 회원: 커서 기반 세션 목록 (더보기)
+    // (추가/수정) 회원: 커서 기반 세션 목록 (더보기)
     // GET /api/chat/sessions?cursor=2026-01-06T09:00:00&size=30
     @GetMapping("")
     public ResponseEntity<?> listMySessionsCursor(

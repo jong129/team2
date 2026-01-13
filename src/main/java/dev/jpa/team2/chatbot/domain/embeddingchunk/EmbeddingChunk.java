@@ -26,15 +26,15 @@ public class EmbeddingChunk {
     private Long chunkId;
 
     @Column(name = "FILE_ID", nullable = false)
-    private Long fileId;
+    private Long fileId;  // 이 청크가 어느 원본에 속하는지 식별자
 
     @Lob
     @Column(name = "CHUNK_TEXT", nullable = false)
-    private String chunkText;
+    private String chunkText; // 실제 청크 텍스트 (길 수 있어서 @Lob)
 
     @Lob
     @Column(name = "VECTOR_DATA", nullable = false)
-    private String vectorData;
+    private String vectorData;  // 임베딩 벡터
 
     @Column(name = "CREATED_AT")
     private LocalDateTime createdAt;

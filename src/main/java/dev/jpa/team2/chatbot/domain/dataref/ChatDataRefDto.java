@@ -17,7 +17,7 @@ public class ChatDataRefDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class Response {
+    public static class Response {  // 어느 세션에 붙었는지 / 저장된 refId가 뭔지 프론트에서 추적 가능
         private boolean success;
         private Long sessionId;
         private Long refId;

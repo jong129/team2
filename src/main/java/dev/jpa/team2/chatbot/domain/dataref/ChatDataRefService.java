@@ -12,6 +12,8 @@ import dev.jpa.team2.chatbot.domain.session.ChatSessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+// 컨텍스트를 최신 ACTIVE 세션에 붙여 저장 + 요약 텍스트를 청크/임베딩으로 만들어 RAG 준비
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -20,22 +22,21 @@ public class ChatDataRefService {
 
     private final ChatDataRefRepository chatDataRefRepository;
     private final ChatSessionRepository chatSessionRepository;
-
-    // embedding 저장 서비스
-    private final EmbeddingChunkService embeddingChunkService;
-
+    private final EmbeddingChunkService embeddingChunkService; // embedding 저장 서비스
+    
     public ChatDataRefDto.Response attachToLatestSession(Long memberId, ChatDataRefDto.Request req) {
-
+        // 요청값 검증
         if (req == null || req.getRefType() == null || req.getTitle() == null || req.getSummary() == null) {
             throw new IllegalArgumentException("refType/title/summary는 필수입니다.");
         }
-
+        
+        // 최신 ACTIVE 세션 가져오기(없으면 생성)
         ChatSession session = getOrCreateLatestActiveSession(memberId);
 
         log.debug("[ChatDataRefService] saving ref | memberId={} | sessionId={} | refType={}",
                 memberId, session.getSessionId(), req.getRefType());
 
-        ChatDataRef saved = chatDataRefRefSave(memberId, session, req);
+        ChatDataRef saved = chatDataRefRefSave(memberId, session, req); // ChatDataRef 저장
 
         // ref 저장 직후, embedding_chunk 자동 생성
         try {
@@ -47,7 +48,7 @@ public class ChatDataRefService {
             log.error("[ChatDataRefService] embedding chunk generation failed | refId={}", saved.getDataRefId(), e);
         }
 
-        // lastMessageAt 갱신
+        // 세션 lastMessageAt 갱신
         session.setLastMessageAt(LocalDateTime.now());
         chatSessionRepository.save(session);
 
@@ -87,7 +88,7 @@ public class ChatDataRefService {
         return chatSessionRepository.save(created);
     }
     
-    // 참고
+//    // 참고
 //    @Transactional(readOnly = true)
 //    public ChatMessageDto getHistory(Long memberId, Long sessionId) {
 //        // 세션 소유권 체크(중복이어도 안전)

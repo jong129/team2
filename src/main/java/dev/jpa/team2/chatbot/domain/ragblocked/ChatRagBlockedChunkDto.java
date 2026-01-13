@@ -18,7 +18,8 @@ public class ChatRagBlockedChunkDto {
     private Integer isActive;
     private Long createdBy;
     private LocalDateTime createdAt;
-
+    
+    // 변환 헬퍼 : 엔티티 -> DTO
     public static ChatRagBlockedChunkDto from(ChatRagBlockedChunk e) {
         return ChatRagBlockedChunkDto.builder()
             .blockId(e.getBlockId())

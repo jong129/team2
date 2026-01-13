@@ -23,26 +23,23 @@ public class ChatMessageCont {
     // 세션 메시지 전체 로딩
     // GET /api/chat/sessions/{sessionId}/messages
     @GetMapping("/sessions/{sessionId}/messages")
-    public ResponseEntity<ChatMessagesResponseDto> messages(
-        @PathVariable("sessionId") Long sessionId,
-        @RequestParam(name="limit", defaultValue="50") int limit,
-        HttpSession httpSession
-    ) {
-        Long memberId = AuthSessionUtil.requireMemberId(httpSession);
-
-        // limit은 현재 적용 안 함(Repo를 Pageable로 바꿔서 적용 가능)
-        return ResponseEntity.ok(messageService.loadSessionMessages(memberId, sessionId));
+    public ResponseEntity<ChatMessagesResponseDto> messages(@PathVariable("sessionId") Long sessionId,
+                                                                                         HttpSession httpSession) {
+      // 세션에서 로그인한 사용자 memberId 추출 (로그인 아니면 예외)  
+      Long memberId = AuthSessionUtil.requireMemberId(httpSession);
+      //서비스 호출
+      return ResponseEntity.ok(messageService.loadSessionMessages(memberId, sessionId));
     }
 
     // 키워드 검색 (날짜별 그룹)
     // GET /api/chat/messages/search?keyword=...&size=50
     @GetMapping("/messages/search")
-    public ResponseEntity<List<ChatSessionDto.GroupedByDate<ChatSessionDto.SearchResultItem>>> search(
-        @RequestParam("keyword") String keyword,
-        @RequestParam(name = "size", defaultValue = "50") int size,
-        HttpSession httpSession
-    ) {
-        Long memberId = AuthSessionUtil.requireMemberId(httpSession);
-        return ResponseEntity.ok(messageService.searchMyMessages(memberId, keyword, size));
+    public ResponseEntity<List<ChatSessionDto.GroupedByDate<ChatSessionDto.SearchResultItem>>> search(@RequestParam("keyword") String keyword,
+                                                                                                                              @RequestParam(name = "size", defaultValue = "50") int size,
+                                                                                                                              HttpSession httpSession) {
+      // 로그인 확인  
+      Long memberId = AuthSessionUtil.requireMemberId(httpSession);
+      // 서비스 호출  
+      return ResponseEntity.ok(messageService.searchMyMessages(memberId, keyword, size));
     }
 }

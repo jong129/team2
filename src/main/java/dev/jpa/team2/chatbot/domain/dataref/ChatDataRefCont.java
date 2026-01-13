@@ -23,7 +23,7 @@ public class ChatDataRefCont {
         HttpSession httpSession
     ) {
         try {
-            Long memberId = AuthSessionUtil.requireMemberId(httpSession);
+            Long memberId = AuthSessionUtil.requireMemberId(httpSession); // 로그인 사용자 확인
 
             // 요청 로그
             log.info(

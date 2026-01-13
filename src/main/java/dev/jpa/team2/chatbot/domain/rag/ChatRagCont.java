@@ -16,7 +16,7 @@ public class ChatRagCont {
     @PostMapping("/ask")
     public ChatRagDto ask(@RequestBody ChatRagDto dto, HttpSession session) {
         Long memberId = AuthSessionUtil.requireMemberId(session);
-        return ragService.ask(dto, memberId);
+        return ragService.ask(dto, memberId); // 서비스로 위임
     }
 
     @GetMapping("/ping")

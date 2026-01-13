@@ -9,12 +9,15 @@ import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
 public interface ChatMessageFeedbackRepository extends JpaRepository<ChatMessageFeedback, Long> {
-
+  
+    // 내가 이 메시지에 뭘 눌렀는지 조회
     Optional<ChatMessageFeedback> findByMemberIdAndChatId(Long memberId, Long chatId);
-
+    
+    // 특정 메시지의 좋아요/싫어요 개수
     long countByChatIdAndValue(Long chatId, Integer value);
 
-    // ✅ 전체 합계(기간) - "단일 row"라도 List<Object[]>로 받는게 제일 안전
+    // ===== 통계 쿼리 (기간 since 기준) =====
+    // 기간 내 전체 좋아요/싫어요 합계
     @Query("""
         select
             sum(case when f.value = 1 then 1 else 0 end),
@@ -24,7 +27,7 @@ public interface ChatMessageFeedbackRepository extends JpaRepository<ChatMessage
     """)
     List<Object[]> totalsAll(@Param("since") LocalDateTime since);
 
-    // 모델별 집계(기간) - chat_message.model 기준
+    // 모델별 좋아요/싫어요 합계 : ChatMessageFeedback f와 ChatMessage m을 chatId로 join
     @Query("""
         select
             coalesce(m.model, 'UNKNOWN'),
@@ -39,7 +42,7 @@ public interface ChatMessageFeedbackRepository extends JpaRepository<ChatMessage
     """)
     List<Object[]> byModelAll(@Param("since") LocalDateTime since);
 
-    // 싫어요 많은 메시지 Top N (기간)
+    // 기간 내 싫어요가 많은 메시지를 상위 N개 : Pageable로 Top N 제한
     @Query("""
         select
             f.chatId,
@@ -54,4 +57,14 @@ public interface ChatMessageFeedbackRepository extends JpaRepository<ChatMessage
             sum(case when f.value = -1 then 1 else 0 end) desc
     """)
     List<Object[]> topDislikedAll(@Param("since") LocalDateTime since, Pageable pageable);
+    
+    // 세션 메시지 로딩 때 내 피드백을 chatId들에 대해 일괄 조회 : [chatId, value] 배열 리스트 반환
+    @Query("""
+        select f.chatId, f.value
+        from ChatMessageFeedback f
+        where f.memberId = :memberId
+          and f.chatId in :chatIds
+    """)
+    List<Object[]> findMyFeedbackByChatIds(@Param("memberId") Long memberId, @Param("chatIds") List<Long> chatIds);
+
 }

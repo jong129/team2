@@ -53,7 +53,4 @@ public interface ChatSessionRepository extends JpaRepository<ChatSession, Long> 
         Pageable pageable
     );
 
-    // 관리자: 단건 조회
-    ChatSession findBySessionId(Long sessionId);
-
 }

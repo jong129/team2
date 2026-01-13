@@ -10,9 +10,14 @@ import jakarta.persistence.InheritanceType;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
+import jakarta.persistence.Transient;
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "DOCUMENTS")
 @Inheritance(strategy = InheritanceType.JOINED)
@@ -40,14 +45,26 @@ public class Documents {
   private Date createdAt = new Date();
   // 파일 업로드 관련
   // -----------------------------------------------------------------------------------
+  @Transient
   private String file1 = "";
+  @Transient
   private String file1saved = "";
+  @Transient
   private String thumb1="";
+  @Transient
   private long size1 = 0;
   
 //-----------------------------------------------------------------------------------
   public Documents(){
     
+  }
+  public Documents(long userId, String docType, String filePath, String status, Date createdAt) {
+    super();
+    this.userId = userId;
+    this.docType = docType;
+    this.filePath = filePath;
+    this.status = status;
+    this.createdAt = createdAt;   
   }
   public Documents(long userId, String docType, String filePath, String status, Date createdAt, 
       String file1, String file1saved, String thumb1, long size1) {

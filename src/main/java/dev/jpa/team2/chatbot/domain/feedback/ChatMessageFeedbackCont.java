@@ -21,8 +21,8 @@ public class ChatMessageFeedbackCont {
         @RequestBody ChatMessageFeedbackDto dto,
         HttpSession session
     ) {
-        Long memberId = AuthSessionUtil.requireMemberId(session);
-        boolean liked = Boolean.TRUE.equals(dto.getLiked());
+        Long memberId = AuthSessionUtil.requireMemberId(session); // 로그인 검증으로 memberId 확보
+        boolean liked = Boolean.TRUE.equals(dto.getLiked());  // null 안전 처리
 
         ChatMessageFeedbackDto result =
             feedbackService.upsertOrToggle(memberId, chatId, liked);

@@ -23,9 +23,9 @@ public class EmbeddingChunkDto {
     @AllArgsConstructor
     @Builder
     public static class CreateResponse {
-        private boolean success;
+        private boolean success;  // 성공 여부
         private Long fileId;
-        private int inserted;
+        private int inserted; // 실제로 저장된 청크 개수 (실패한 청크 제회하고 ok만 카운트)
     }
 
     // =========================
@@ -40,8 +40,9 @@ public class EmbeddingChunkDto {
         private Long fileId;
         private String chunkText;
         private Double similarityScore;
-
-        public static SearchResult of(EmbeddingChunk chunk, double score) {
+        
+        // 엔티티 + 유사도 점수를 DTO로 변환하는 헬퍼
+        public static SearchResult of(EmbeddingChunk chunk, double score) { 
             return SearchResult.builder()
                 .chunkId(chunk.getChunkId())
                 .fileId(chunk.getFileId())

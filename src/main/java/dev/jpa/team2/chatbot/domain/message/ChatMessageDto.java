@@ -16,21 +16,21 @@ public class ChatMessageDto {
     private String content;
     private LocalDateTime createdAt;
 
-    // ✅ 피드백 관련(집계)
+    // 피드백 관련(집계)
     private Integer likeCount;
     private Integer dislikeCount;
 
-    // ✅ "내가" 이 메시지에 남긴 값: 1 / -1 / null
+    // "내가" 이 메시지에 남긴 값: 1 / -1 / null
     private Integer myFeedback;
 
-    // ✅ NEW: usage (AI 답변일 때 주로 의미 있음)
+    // usage
     private String model;
     private Integer tokensIn;
     private Integer tokensOut;
     private Integer tokensTotal;
     private Integer latencyMs;
 
-    // ✅ 추천 후속 질문 (AI 응답에만 존재)
+    // 추천 후속 질문 (AI 응답에만 존재)
     private List<String> followUpQuestions = new ArrayList<>();
 
     public static ChatMessageDto from(ChatMessage m) {
@@ -43,21 +43,23 @@ public class ChatMessageDto {
             m.getLikeCount(),
             m.getDislikeCount(),
             null,               // myFeedback은 서비스에서 채워넣음
-            m.getModel(),       // ✅ NEW
-            m.getTokensIn(),    // ✅ NEW
-            m.getTokensOut(),   // ✅ NEW
+            m.getModel(),      
+            m.getTokensIn(),    
+            m.getTokensOut(),  
             m.getTokensTotal(),
             m.getLatencyMs(),
             new ArrayList<>()   // followUpQuestions
         );
 
-        // ✅ ASSISTANT 메시지인 경우만 추천질문 세팅
+        // ASSISTANT 메시지인 경우만 추천질문 세팅
         if ("ASSISTANT".equalsIgnoreCase(m.getRole())) {
-            List<String> fu = new ArrayList<>();
-            if (m.getSuggestQ1() != null && !m.getSuggestQ1().isBlank()) fu.add(m.getSuggestQ1());
-            if (m.getSuggestQ2() != null && !m.getSuggestQ2().isBlank()) fu.add(m.getSuggestQ2());
-            if (m.getSuggestQ3() != null && !m.getSuggestQ3().isBlank()) fu.add(m.getSuggestQ3());
-            dto.setFollowUpQuestions(fu);
+          List<String> qs = new ArrayList<>();
+          if (m.getSuggestQ1() != null && !m.getSuggestQ1().isBlank()) qs.add(m.getSuggestQ1());
+          if (m.getSuggestQ2() != null && !m.getSuggestQ2().isBlank()) qs.add(m.getSuggestQ2());
+          if (m.getSuggestQ3() != null && !m.getSuggestQ3().isBlank()) qs.add(m.getSuggestQ3());
+          dto.setFollowUpQuestions(qs.isEmpty() ? null : qs); // 추천 질문이 없으면 null
+        } else {
+          dto.setFollowUpQuestions(null);
         }
 
         return dto;

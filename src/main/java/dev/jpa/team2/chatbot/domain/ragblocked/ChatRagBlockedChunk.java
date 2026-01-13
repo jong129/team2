@@ -4,15 +4,17 @@ import java.time.LocalDateTime;
 import jakarta.persistence.*;
 import lombok.*;
 
+// 차단 chunk를 저장하는 테이블 엔티티
+
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(
+@Table( // 같은 chunk를 중복 차단 레코드로 여러 개 만들 수 없게 DB에서 막음
     name = "CHAT_RAG_BLOCKED_CHUNK",
-    uniqueConstraints = @UniqueConstraint(name = "UK_CHAT_RBC_CHUNK", columnNames = "CHUNK_ID")
+    uniqueConstraints = @UniqueConstraint(name = "UK_CHAT_RBC_CHUNK", columnNames = "CHUNK_ID") 
 )
 public class ChatRagBlockedChunk {
 
@@ -42,7 +44,8 @@ public class ChatRagBlockedChunk {
         if (createdAt == null) createdAt = LocalDateTime.now();
         if (isActive == null) isActive = 1;
     }
-
+    
+    // 편의 메소드
     public void deactivate() { this.isActive = 0; }
     public void activate()   { this.isActive = 1; }
 }

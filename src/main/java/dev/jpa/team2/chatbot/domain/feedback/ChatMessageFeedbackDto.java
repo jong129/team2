@@ -20,9 +20,6 @@ public class ChatMessageFeedbackDto {
     private Integer likeCount;
     private Integer dislikeCount;
 
-    // 내가 남긴 평가
-    //  1  = 좋아요
-    // -1  = 싫어요
-    // null = 평가 안 함
+    // 내가 남긴 평가 (1  = 좋아요, -1  = 싫어요, null = 평가 안 함)
     private Integer myFeedback;
 }

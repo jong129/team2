@@ -58,5 +58,4 @@ public class AdminChecklistV2Cont {
     service.publishTemplate(templateId);
   }
 
-  
 }

@@ -1,12 +1,14 @@
 package dev.jpa.team2.checklist.ai;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -91,6 +93,38 @@ public class AdminPostChecklistAiImproveService {
 
     LocalDateTime now = LocalDateTime.now();
 
+ // 7-1) AI 개선 로그 생성 (description용)
+    Map<PostChecklistSignalType, Long> summary =
+        signals.stream()
+            .collect(Collectors.groupingBy(
+                AiPostItemSignalDTO::getSignal,
+                Collectors.counting()
+            ));
+
+    StringBuilder desc = new StringBuilder();
+    desc.append("AI 개선 초안 (기준 템플릿 ID=").append(baseTemplateId).append(")\n\n");
+    desc.append("[요약]\n");
+
+    for (PostChecklistSignalType t : PostChecklistSignalType.values()) {
+      long cnt = summary.getOrDefault(t, 0L);
+      if (cnt > 0) {
+        desc.append("- ").append(t.name()).append(": ").append(cnt).append("\n");
+      }
+    }
+
+    desc.append("\n[상세]\n");
+    signals.stream()
+        .limit(5) // 너무 길어지지 않게
+        .forEach(s -> {
+          desc.append("- (")
+              .append(s.getSignal().name())
+              .append(") ")
+              .append(s.getTitle())
+              .append("\n  → ")
+              .append(s.getReason())
+              .append("\n");
+        });
+    
     // 8) 새 템플릿(DRAFT) 생성
     ChecklistTemplate draft = ChecklistTemplate.builder()
         .phase(base.getPhase())
@@ -98,7 +132,7 @@ public class AdminPostChecklistAiImproveService {
         .templateName(base.getTemplateName() + " (AI 초안)")
         .versionNo(newVer)
         .status(TemplateStatus.DRAFT)
-        .description("AI 개선 초안 (기준 템플릿 ID=" + baseTemplateId + ")")
+        .description(desc.toString())
         .createdAt(now)
         .updatedAt(now)
         .build();
@@ -221,4 +255,75 @@ public class AdminPostChecklistAiImproveService {
   }
 
   public record ImproveResult(Long baseTemplateId, Long newTemplateId, Integer newVersionNo) {}
+  
+  @Transactional(readOnly = true)
+  public List<AiTemplateDiffRowDTO> diff(Long baseTemplateId, Long draftTemplateId) {
+
+    // 1) base / draft 구성 로드 (itemOrder 정렬된 상태)
+    List<ChecklistTemplateItem> base =
+        templateItemRepo.findActiveItemsByTemplateIdOrderByItemOrder(baseTemplateId);
+
+    List<ChecklistTemplateItem> draft =
+        templateItemRepo.findActiveItemsByTemplateIdOrderByItemOrder(draftTemplateId);
+
+    Map<Integer, ChecklistTemplateItem> baseByOrder =
+        base.stream().collect(Collectors.toMap(
+            ChecklistTemplateItem::getItemOrder, x -> x, (a, b) -> a
+        ));
+
+    Map<Integer, ChecklistTemplateItem> draftByOrder =
+        draft.stream().collect(Collectors.toMap(
+            ChecklistTemplateItem::getItemOrder, x -> x, (a, b) -> a
+        ));
+
+    // 2) base 기준 시그널 계산
+    List<AiPostItemSignalDTO> signals =
+        aiPostChecklistService.getItemSignals(baseTemplateId);
+
+    Map<Integer, AiPostItemSignalDTO> signalByOrder =
+        signals.stream().collect(Collectors.toMap(
+            AiPostItemSignalDTO::getItemOrder, s -> s, (a, b) -> a
+        ));
+
+    // 3) 비교 대상 order 전체 수집
+    Set<Integer> orders = new TreeSet<>();
+    orders.addAll(baseByOrder.keySet());
+    orders.addAll(draftByOrder.keySet());
+
+    List<AiTemplateDiffRowDTO> result = new ArrayList<>();
+
+    for (Integer order : orders) {
+      ChecklistTemplateItem b = baseByOrder.get(order);
+      ChecklistTemplateItem d = draftByOrder.get(order);
+
+      AiPostItemSignalDTO sig = signalByOrder.get(order);
+
+      PostChecklistSignalType action = PostChecklistSignalType.KEEP;
+      String reason = sig == null ? null : sig.getReason();
+
+      if (b != null && d == null) {
+        action = PostChecklistSignalType.REMOVE_CANDIDATE;
+      } else if (b != null && d != null) {
+        Long bm = b.getItemMaster().getItemMasterId();
+        Long dm = d.getItemMaster().getItemMasterId();
+
+        if (!Objects.equals(bm, dm)) {
+          action = PostChecklistSignalType.IMPROVE_COPY;
+        } else if ("N".equals(b.getRequiredYn()) && "Y".equals(d.getRequiredYn())) {
+          action = PostChecklistSignalType.INSIGHT_CANDIDATE;
+        }
+      }
+
+      result.add(AiTemplateDiffRowDTO.builder()
+          .itemOrder(order)
+          .beforeTitle(b == null ? null : b.getItemMaster().getTitle())
+          .afterTitle(d == null ? null : d.getItemMaster().getTitle())
+          .action(action)
+          .reason(reason)
+          .build());
+    }
+
+    return result;
+  }
+
 }

@@ -9,5 +9,6 @@ public record AdminMemberWithdrawRowDto(
     String name,
     String reasonCode,
     String reasonText,
-    LocalDateTime createdAt
+    LocalDateTime createdAt,
+    String memberStatus   // ✅ 추가
 ) {}

@@ -38,7 +38,8 @@ public class AdminChecklistV2Service {
   }
 
   public List<TemplateItemRowDTO> getTemplateItems(Long templateId) {
-    List<ChecklistTemplateItem> list = templateItemRepo.findByTemplate_TemplateIdOrderByItemOrderAsc(templateId);
+    List<ChecklistTemplateItem> list =
+        templateItemRepo.findByTemplate_TemplateIdAndActiveYnOrderByItemOrderAsc(templateId, "Y");
     return list.stream().map(ti -> TemplateItemRowDTO.builder()
         .itemMasterId(ti.getItemMaster().getItemMasterId())
         .itemOrder(ti.getItemOrder())

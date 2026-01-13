@@ -15,12 +15,11 @@ public class PostChecklistCont {
 
   private final PostChecklistService postChecklistService;
 
-  // ✅ POST 세션 시작 (프론트: axios.post("/checklists/post/session/start", null, { params:{memberId} }))
+  // ✅ POST 세션 시작 (프론트: axios.post("/checklists/post/session/start", null, {
+  // params:{memberId} }))
   @PostMapping("/session/start")
-  public PostChecklistDTO startPostSession(
-      @RequestParam("memberId") Long memberId,
-      @RequestParam(value = "preSessionId", required = false) Long preSessionId
-  ) {
+  public PostChecklistDTO startPostSession(@RequestParam("memberId") Long memberId,
+      @RequestParam(value = "preSessionId", required = false) Long preSessionId) {
     return postChecklistService.startPostSession(memberId, preSessionId);
   }
 
@@ -38,11 +37,8 @@ public class PostChecklistCont {
 
   // ✅ 라디오 저장 (프론트: PATCH /checklists/post/session/{sid}/items/{itemId})
   @PatchMapping("/session/{sessionId}/items/{itemId}")
-  public void updateCheckStatus(
-      @PathVariable("sessionId") Long sessionId,
-      @PathVariable("itemId") Long itemId,
-      @RequestBody UpdateCheckStatusRequest req
-  ) {
+  public void updateCheckStatus(@PathVariable("sessionId") Long sessionId, @PathVariable("itemId") Long itemId,
+      @RequestBody UpdateCheckStatusRequest req) {
     postChecklistService.updateCheckStatus(sessionId, itemId, req.getCheckStatus());
   }
 
@@ -54,20 +50,23 @@ public class PostChecklistCont {
 
   public static class UpdateCheckStatusRequest {
     private String checkStatus;
-    public String getCheckStatus() { return checkStatus; }
-    public void setCheckStatus(String checkStatus) { this.checkStatus = checkStatus; }
+
+    public String getCheckStatus() {
+      return checkStatus;
+    }
+
+    public void setCheckStatus(String checkStatus) {
+      this.checkStatus = checkStatus;
+    }
   }
- 
 
   @GetMapping("/history")
-  public Page<ChecklistHistoryRowDTO> postHistory(
-      @RequestParam("memberId") Long memberId,
+  public Page<ChecklistHistoryRowDTO> postHistory(@RequestParam("memberId") Long memberId,
       @RequestParam(value = "page", defaultValue = "0") int page,
-      @RequestParam(value = "size", defaultValue = "5") int size
-  ) {
+      @RequestParam(value = "size", defaultValue = "5") int size) {
     return postChecklistService.getPostHistoryDto(memberId, page, size);
   }
-  
+
   @DeleteMapping("/session/{sessionId}")
   public void deletePostSession(@PathVariable("sessionId") Long sessionId) {
     postChecklistService.deletePostSession(sessionId);
@@ -78,5 +77,16 @@ public class PostChecklistCont {
     return postChecklistService.getSummary(sessionId);
   }
 
+  //✅ 만족도 저장
+  @PostMapping("/session/{sessionId}/satisfaction")
+  public void saveSatisfaction(@PathVariable("sessionId") Long sessionId, @RequestBody SaveSatisfactionRequest req) {
+    postChecklistService.saveSatisfaction(sessionId, req.getRating(), req.getCommentText());
+  }
+
+  //✅ 만족도 조회(있으면 반환, 없으면 null)
+  @GetMapping("/session/{sessionId}/satisfaction")
+  public PostChecklistSatisfactionDTO getSatisfaction(@PathVariable("sessionId") Long sessionId) {
+    return postChecklistService.getSatisfaction(sessionId);
+  }
 
 }

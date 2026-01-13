@@ -95,5 +95,16 @@ public class ChecklistTemplate {
       this.updatedAt = java.time.LocalDateTime.now();
     }
 
+    @PrePersist
+    public void prePersist() {
+      if (this.createdAt == null) this.createdAt = LocalDateTime.now();
+      if (this.updatedAt == null) this.updatedAt = LocalDateTime.now();
+    }
 
+    @PreUpdate
+    public void preUpdate() {
+      this.updatedAt = LocalDateTime.now();
+    }
+
+    
 }

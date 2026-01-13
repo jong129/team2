@@ -25,10 +25,6 @@ public class AdminChecklistCont {
   ) {
     return service.listTemplates(phase, status, keyword, sortKey, sortDir, pageable);
   }
-
-  public void start( ) {
-    int a;
-  }
   
   @PatchMapping("/templates/{templateId}/status")
   public void updateStatus(

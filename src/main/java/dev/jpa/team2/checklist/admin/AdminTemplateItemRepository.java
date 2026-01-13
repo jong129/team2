@@ -10,11 +10,12 @@ public interface AdminTemplateItemRepository extends JpaRepository<ChecklistTemp
 
   List<ChecklistTemplateItem> findByTemplate_TemplateIdOrderByItemOrderAsc(Long templateId);
 
+  // ✅ 추가: 활성만 + 정렬
+  List<ChecklistTemplateItem> findByTemplate_TemplateIdAndActiveYnOrderByItemOrderAsc(Long templateId, String activeYn);
+
   void deleteByTemplate_TemplateId(Long templateId);
-  
+
   long countByTemplate_TemplateId(Long templateId);
 
   long countByTemplate_TemplateIdAndActiveYn(Long templateId, String activeYn);
-
-  
 }

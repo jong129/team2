@@ -30,6 +30,9 @@ public class ChecklistItemMaster {
   @Column(name = "POST_GROUP_CODE", length = 30)
   private String postGroupCode; // POST_A/B/C/D or null
 
+  @Column(name = "CHECK_AREA", length = 50)
+  private String checkArea;
+
   @Column(name = "TITLE", nullable = false, length = 200)
   private String title;
 
@@ -48,6 +51,7 @@ public class ChecklistItemMaster {
 
   @Column(name = "UPDATED_AT", nullable = false)
   private LocalDateTime updatedAt;
+
 
   @PrePersist
   void prePersist() {

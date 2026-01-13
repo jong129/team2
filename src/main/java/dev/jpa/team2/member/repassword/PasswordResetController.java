@@ -14,14 +14,16 @@ public class PasswordResetController {
     public PasswordResetController(PasswordResetService passwordResetService) {
         this.passwordResetService = passwordResetService;
     }
+
     /**
-     * 🔥 비밀번호 변경 (resetCode 기반)
+     * 비밀번호 변경 (resetCode 기반)
+     * - 비번찾기(재설정) 경로이므로 RESET_CHANGE 로그가 남아야 함
      */
     @PostMapping("/reset")
-    public ResponseEntity<?> reset(
-            @RequestBody PasswordResetDTO dto) {
+    public ResponseEntity<?> reset(@RequestBody PasswordResetDTO dto) {
 
-        passwordResetService.resetPassword(
+        // ✅ 기존 resetPassword -> resetPasswordWithHistory 로 변경
+        passwordResetService.resetPasswordWithHistory(
                 dto.getResetCode(),
                 dto.getNewPassword(),
                 dto.getConfirmPassword()
@@ -29,7 +31,7 @@ public class PasswordResetController {
 
         return ResponseEntity.ok("비밀번호가 변경되었습니다.");
     }
-    
+
     @PostMapping("/token")
     public ResponseEntity<?> issueToken(@RequestBody PasswordResetRequestDTO dto) {
         String resetCode =

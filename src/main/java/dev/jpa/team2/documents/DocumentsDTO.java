@@ -60,6 +60,9 @@ public class DocumentsDTO {
     this.status = status;
     this.createdAt = createdAt;
   }
+  public Documents toEntity() {
+    return new Documents(userId, docType, filePath, status, createdAt);
+  }
   public Documents toEntityWithFile() {
     return new Documents(userId, docType, filePath, status, createdAt, file1, file1saved, thumb1, size1);
   }

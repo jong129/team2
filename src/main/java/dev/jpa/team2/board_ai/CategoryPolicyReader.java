@@ -24,12 +24,13 @@ public class CategoryPolicyReader {
         private Long categoryId;
         private String aiSummaryYn;
         private String aiSentimentYn;
+        private String aiWriteYn;       // ✅ 추가
     }
 
     public CategoryAiPolicy getPolicyOrThrow(Long categoryId) {
         try {
             String sql = """
-                SELECT CATEGORY_ID, AI_SUMMARY_YN, AI_SENTIMENT_YN
+                SELECT CATEGORY_ID, AI_SUMMARY_YN, AI_SENTIMENT_YN, AI_WRITE_YN
                 FROM BOARD_CATEGORY
                 WHERE CATEGORY_ID = ?
             """;
@@ -38,6 +39,7 @@ public class CategoryPolicyReader {
                     .categoryId(rs.getLong("CATEGORY_ID"))
                     .aiSummaryYn(rs.getString("AI_SUMMARY_YN"))
                     .aiSentimentYn(rs.getString("AI_SENTIMENT_YN"))
+                    .aiWriteYn(rs.getString("AI_WRITE_YN"))   // ✅ 추가
                     .build(), categoryId);
 
             if (policy == null) throw new ResponseStatusException(NOT_FOUND, "category not found");

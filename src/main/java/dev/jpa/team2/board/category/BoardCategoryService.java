@@ -25,8 +25,20 @@ public class BoardCategoryService {
     BoardCategory e = new BoardCategory();
     e.setCategoryName(name);
 
-    applyOptionalFields(e, req.getVisibleYn(), req.getWritePolicy(),
-        req.getCommentYn(), req.getReportYn(), req.getLikeYn(), req.getSecretYn(), req.getFileYn(), req.getSortNo());
+    applyOptionalFields(
+        e,
+        req.getVisibleYn(),
+        req.getWritePolicy(),
+        req.getCommentYn(),
+        req.getReportYn(),
+        req.getLikeYn(),
+        req.getSecretYn(),
+        req.getFileYn(),
+        req.getAiSummaryYn(),
+        req.getAiSentimentYn(),
+        req.getAiWriteYn(),
+        req.getSortNo()
+    );
 
     return BoardCategoryDto.fromEntity(boardCategoryRepository.save(e));
   }
@@ -45,8 +57,20 @@ public class BoardCategoryService {
       e.setCategoryName(name);
     }
 
-    applyOptionalFields(e, req.getVisibleYn(), req.getWritePolicy(),
-        req.getCommentYn(), req.getReportYn(), req.getLikeYn(), req.getSecretYn(), req.getFileYn(), req.getSortNo());
+    applyOptionalFields(
+        e,
+        req.getVisibleYn(),
+        req.getWritePolicy(),
+        req.getCommentYn(),
+        req.getReportYn(),
+        req.getLikeYn(),
+        req.getSecretYn(),
+        req.getFileYn(),
+        req.getAiSummaryYn(),
+        req.getAiSentimentYn(),
+        req.getAiWriteYn(),
+        req.getSortNo()
+    );
 
     return BoardCategoryDto.fromEntity(e);
   }
@@ -79,6 +103,9 @@ public class BoardCategoryService {
       String likeYn,
       String secretYn,
       String fileYn,
+      String aiSummaryYn,
+      String aiSentimentYn,
+      String aiWriteYn,
       Integer sortNo
   ) {
     if (visibleYn != null) e.setVisibleYn(assertYn(visibleYn, "visibleYn"));
@@ -89,6 +116,10 @@ public class BoardCategoryService {
     if (likeYn != null) e.setLikeYn(assertYn(likeYn, "likeYn"));
     if (secretYn != null) e.setSecretYn(assertYn(secretYn, "secretYn"));
     if (fileYn != null) e.setFileYn(assertYn(fileYn, "fileYn"));
+
+    if (aiSummaryYn != null) e.setAiSummaryYn(assertYn(aiSummaryYn, "aiSummaryYn"));
+    if (aiSentimentYn != null) e.setAiSentimentYn(assertYn(aiSentimentYn, "aiSentimentYn"));
+    if (aiWriteYn != null) e.setAiWriteYn(assertYn(aiWriteYn, "aiWriteYn"));
 
     if (sortNo != null) e.setSortNo(sortNo);
   }
@@ -105,3 +136,4 @@ public class BoardCategoryService {
     return x;
   }
 }
+

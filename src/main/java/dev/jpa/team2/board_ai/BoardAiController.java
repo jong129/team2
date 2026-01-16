@@ -6,6 +6,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
+import org.springframework.http.ResponseEntity;
+
 @RestController
 @RequestMapping("/api/board/ai")
 public class BoardAiController {
@@ -40,5 +42,17 @@ public class BoardAiController {
         if (req == null) req = new AiGenerateRequest();
         return boardAiService.analyzeSentiment(boardId, req);
     }
+    
+    @PostMapping("/write/{categoryId}")
+    public AiWriteDraftResponse writeDraft(
+        @PathVariable("categoryId") Long categoryId,
+        @RequestBody(required = false) AiWriteDraftRequest req,
+        HttpSession session
+    ) {
+      requireLogin(session);
+      if (req == null) req = new AiWriteDraftRequest();
+      return boardAiService.generateWriteDraft(categoryId, req);
+    }
+
 
 }

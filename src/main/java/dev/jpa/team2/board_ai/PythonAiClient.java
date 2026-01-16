@@ -30,6 +30,18 @@ public class PythonAiClient implements AiClient {
         return post(url, req);
     }
 
+    /**
+     * LLM #3: 글 초안 생성(WRITE)
+     * - 입력(대충 쓴 title/content)을 기반으로 제목+본문 초안을 생성
+     * - FastAPI 쪽에 /board/write 엔드포인트가 있어야 함
+     */
+    @Override
+    public PythonAiResponse writeDraft(String prompt, String title, String content) {
+        String url = baseUrl + "/board/write";
+        PythonAiRequest req = new PythonAiRequest(prompt, title, content, true, 8000);
+        return post(url, req);
+    }
+
     private PythonAiResponse post(String url, PythonAiRequest req) {
         try {
             HttpHeaders headers = new HttpHeaders();
@@ -50,4 +62,5 @@ public class PythonAiClient implements AiClient {
         }
     }
 }
+
 

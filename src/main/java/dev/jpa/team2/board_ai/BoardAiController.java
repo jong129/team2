@@ -6,8 +6,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
-import org.springframework.http.ResponseEntity;
-
 @RestController
 @RequestMapping("/api/board/ai")
 public class BoardAiController {
@@ -18,12 +16,15 @@ public class BoardAiController {
         this.boardAiService = boardAiService;
     }
 
-    private void requireLogin(HttpSession session) {
-        Object memberId = session.getAttribute("LOGIN_MEMBER_ID");
-        if (memberId == null) throw new ResponseStatusException(UNAUTHORIZED, "login required");
+    // 로그인 체크 + memberId 반환
+    private Long requireLogin(HttpSession session) {
+        Object memberIdObj = session.getAttribute("LOGIN_MEMBER_ID");
+        if (memberIdObj == null) throw new ResponseStatusException(UNAUTHORIZED, "login required");
+
+        if (memberIdObj instanceof Long) return (Long) memberIdObj;
+        return Long.valueOf(String.valueOf(memberIdObj));
     }
 
- // LLM #1: 요약
     @PostMapping("/summary/{boardId}")
     public AiResultResponse summary(@PathVariable("boardId") Long boardId,
                                     @RequestBody(required = false) AiGenerateRequest req,
@@ -33,7 +34,6 @@ public class BoardAiController {
         return boardAiService.generateSummary(boardId, req);
     }
 
-    // LLM #2: 호재/악재(긍/부정) 해석
     @PostMapping("/sentiment/{boardId}")
     public AiResultResponse sentiment(@PathVariable("boardId") Long boardId,
                                       @RequestBody(required = false) AiGenerateRequest req,
@@ -42,17 +42,16 @@ public class BoardAiController {
         if (req == null) req = new AiGenerateRequest();
         return boardAiService.analyzeSentiment(boardId, req);
     }
-    
+
     @PostMapping("/write/{categoryId}")
     public AiWriteDraftResponse writeDraft(
-        @PathVariable("categoryId") Long categoryId,
-        @RequestBody(required = false) AiWriteDraftRequest req,
-        HttpSession session
+            @PathVariable("categoryId") Long categoryId,
+            @RequestBody(required = false) AiWriteDraftRequest req,
+            HttpSession session
     ) {
-      requireLogin(session);
-      if (req == null) req = new AiWriteDraftRequest();
-      return boardAiService.generateWriteDraft(categoryId, req);
+        Long memberId = requireLogin(session);
+        if (req == null) req = new AiWriteDraftRequest();
+        return boardAiService.generateWriteDraft(categoryId, memberId, req);
     }
-
-
 }
+

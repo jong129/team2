@@ -105,7 +105,8 @@ public class BoardAiServiceImpl implements BoardAiService {
 
   @Override
   @Transactional
-  public AiWriteDraftResponse generateWriteDraft(Long categoryId, AiWriteDraftRequest req) {
+  public AiWriteDraftResponse generateWriteDraft(Long categoryId, Long memberId, AiWriteDraftRequest req)
+ {
     var policy = categoryPolicyReader.getPolicyOrThrow(categoryId);
 
     if (!"Y".equalsIgnoreCase(policy.getAiWriteYn())) {
@@ -136,9 +137,10 @@ public class BoardAiServiceImpl implements BoardAiService {
     }
 
     BoardAiDraft saved = boardAiDraftRepository.save(
-        buildDraft(categoryId, inputTitle, inputContent, aiRes.getResultText(),
+        buildDraft(categoryId, memberId, inputTitle, inputContent, aiRes.getResultText(),
             prompt.getPromptCode(), aiRes.getModelName())
     );
+
 
     return toWriteResponse(saved, false);
   }
@@ -186,10 +188,11 @@ public class BoardAiServiceImpl implements BoardAiService {
         .build();
   }
 
-  private BoardAiDraft buildDraft(Long categoryId, String inputTitle, String inputContent,
+  private BoardAiDraft buildDraft(Long categoryId, Long memberId, String inputTitle, String inputContent,
       String resultText, String promptCode, String modelName) {
 
     BoardAiDraft d = new BoardAiDraft();
+    d.setMemberId(memberId); // 핵심
     d.setCategoryId(categoryId);
     d.setInputTitle(inputTitle);
     d.setInputContent(inputContent);

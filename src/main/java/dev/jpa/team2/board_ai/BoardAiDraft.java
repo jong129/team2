@@ -26,6 +26,9 @@ public class BoardAiDraft {
 
     @Column(name = "CATEGORY_ID", nullable = false)
     private Long categoryId;
+    
+    @Column(name = "MEMBER_ID", nullable = false)
+    private Long memberId;
 
     @Column(name = "AI_TYPE", nullable = false, length = 30)
     private String aiType; // WRITE 고정으로 들어갈 예정

@@ -2,7 +2,9 @@ package dev.jpa.team2.member.mypage;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.data.domain.Pageable;
 
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -20,9 +22,8 @@ public class MyPageController {
   private final MemberRepository memberRepository;
   private final PasswordEncoder passwordEncoder;
 
-  public MyPageController(MyPageService myPageService,
-                          MemberRepository memberRepository,
-                          PasswordEncoder passwordEncoder) {
+  public MyPageController(MyPageService myPageService, MemberRepository memberRepository,
+      PasswordEncoder passwordEncoder) {
     this.myPageService = myPageService;
     this.memberRepository = memberRepository;
     this.passwordEncoder = passwordEncoder;
@@ -34,11 +35,8 @@ public class MyPageController {
   }
 
   @PutMapping("/profile/name")
-  public ResponseEntity<?> updateName(
-      @RequestBody MyPageUpdateNameReqDto dto,
-      HttpSession session,
-      HttpServletRequest request
-  ) {
+  public ResponseEntity<?> updateName(@RequestBody MyPageUpdateNameReqDto dto, HttpSession session,
+      HttpServletRequest request) {
     myPageService.updateName(session, dto, request);
     return ResponseEntity.ok(Map.of("success", true, "message", "이름이 변경되었습니다."));
   }
@@ -50,29 +48,19 @@ public class MyPageController {
   }
 
   @PostMapping("/password/change")
-  public ResponseEntity<?> changePassword(
-      @RequestBody MyPagePasswordChangeReqDto dto,
-      HttpSession session,
-      HttpServletRequest request
-  ) {
+  public ResponseEntity<?> changePassword(@RequestBody MyPagePasswordChangeReqDto dto, HttpSession session,
+      HttpServletRequest request) {
     myPageService.changePassword(session, dto, request);
 
     // 비밀번호 변경 성공 시 즉시 로그아웃(세션 만료)
     session.invalidate();
 
-    return ResponseEntity.ok(Map.of(
-        "success", true,
-        "message", "비밀번호가 변경되었습니다. 다시 로그인해주세요."
-    ));
+    return ResponseEntity.ok(Map.of("success", true, "message", "비밀번호가 변경되었습니다. 다시 로그인해주세요."));
   }
 
-
   @PostMapping("/withdraw")
-  public ResponseEntity<?> withdraw(
-      @RequestBody MyPageWithdrawReqDto dto,
-      HttpSession session,
-      HttpServletRequest request
-  ) {
+  public ResponseEntity<?> withdraw(@RequestBody MyPageWithdrawReqDto dto, HttpSession session,
+      HttpServletRequest request) {
     Map<String, Object> res = new HashMap<>();
 
     Object v = session.getAttribute("LOGIN_MEMBER_ID");
@@ -110,4 +98,40 @@ public class MyPageController {
     res.put("message", "회원탈퇴가 완료되었습니다.");
     return ResponseEntity.ok(res);
   }
+
+//문의 등록
+  @PostMapping("/inquiries")
+  public ResponseEntity<?> createInquiry(@RequestBody UserInquiryCreateRequest req, HttpSession session) {
+    Object v = session.getAttribute("LOGIN_MEMBER_ID");
+    if (v == null)
+      return ResponseEntity.status(401).body(Map.of("success", false, "message", "로그인이 필요합니다."));
+
+    Long memberId = (v instanceof Long) ? (Long) v : Long.valueOf(String.valueOf(v));
+    Long inquiryId = myPageService.createInquiry(memberId, req);
+
+    return ResponseEntity.ok(Map.of("success", true, "inquiryId", inquiryId));
+  }
+
+//내 문의 목록
+  @GetMapping("/inquiries")
+  public ResponseEntity<?> myInquiryList(HttpSession session, @PageableDefault(size = 10) Pageable pageable) {
+    Object v = session.getAttribute("LOGIN_MEMBER_ID");
+    if (v == null)
+      return ResponseEntity.status(401).body(Map.of("success", false, "message", "로그인이 필요합니다."));
+
+    Long memberId = (v instanceof Long) ? (Long) v : Long.valueOf(String.valueOf(v));
+    return ResponseEntity.ok(myPageService.myInquiryList(memberId, pageable));
+  }
+
+//내 문의 상세
+  @GetMapping("/inquiries/{inquiryId}")
+  public ResponseEntity<?> myInquiryDetail(HttpSession session, @PathVariable(name = "inquiryId") Long inquiryId) {
+    Object v = session.getAttribute("LOGIN_MEMBER_ID");
+    if (v == null)
+      return ResponseEntity.status(401).body(Map.of("success", false, "message", "로그인이 필요합니다."));
+
+    Long memberId = (v instanceof Long) ? (Long) v : Long.valueOf(String.valueOf(v));
+    return ResponseEntity.ok(myPageService.myInquiryDetail(memberId, inquiryId));
+  }
+
 }

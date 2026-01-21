@@ -8,6 +8,7 @@ import lombok.Getter;
 public enum ErrorCode {
 
     FILE_MISSING(400, "파일이 없습니다."),
+    IMAGE_REJECTED(403, "부적절한 이미지가 포함되어 업로드할 수 없습니다."),
     FASTAPI_ERROR(500, "FastAPI 호출 실패"),
     SERVER_ERROR(500, "서버 오류"),
     UNAUTHORIZED(400,"클라이언트 오류");

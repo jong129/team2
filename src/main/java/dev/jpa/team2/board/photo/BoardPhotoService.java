@@ -29,12 +29,15 @@ public class BoardPhotoService {
   private final BoardPostRepository boardPostRepository;
   private final MemberRoleService memberRoleService;
 
+  // ✅ 추가
+  private final BoardImageModerationService boardImageModerationService;
+
   @Value("${board.photo.dir:uploads/board/photos}")
   private String baseDir;
 
   @Transactional(readOnly = true)
   public List<BoardPhotoDto> list(Long boardId) {
-    getPost(boardId); // 글 존재 확인
+    getPost(boardId);
     return boardPhotoRepository.findByBoardIdOrderByPhotoIdAsc(boardId)
         .stream().map(BoardPhotoDto::from).collect(Collectors.toList());
   }
@@ -58,6 +61,9 @@ public class BoardPhotoService {
     for (MultipartFile mf : photos) {
       if (mf == null || mf.isEmpty()) continue;
 
+      // ✅ 여기서 AI 판별 (부적절이면 예외 발생 + 로그 저장)
+      boardImageModerationService.checkOrThrow(boardId, loginMemberId, mf);
+
       String original = safeName(mf.getOriginalFilename());
       String savedName = makeSavedName(original);
 
@@ -68,7 +74,6 @@ public class BoardPhotoService {
       BoardPhoto p = new BoardPhoto();
       p.setBoardId(boardId);
       p.setSavedName(savedName);
-      // thumbName은 일단 미사용(null)
 
       saved.add(BoardPhotoDto.from(boardPhotoRepository.save(p)));
     }
@@ -103,7 +108,7 @@ public class BoardPhotoService {
     Path path = dir.resolve(p.getSavedName()).normalize();
     try { Files.deleteIfExists(path); } catch (Exception ignored) {}
 
-    boardPhotoRepository.deleteById(photoId); // 하드삭제
+    boardPhotoRepository.deleteById(photoId);
   }
 
   private BoardPost getPost(Long boardId) {
@@ -133,4 +138,36 @@ public class BoardPhotoService {
     long ts = System.currentTimeMillis();
     return ts + "_" + uuid + "_" + original;
   }
+  
+  @Transactional(readOnly = true)
+  public List<BoardPhotoPrecheckResult> precheck(Long loginMemberId, List<MultipartFile> photos) {
+    requireLogin(loginMemberId);
+
+    if (photos == null || photos.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "photos required");
+    }
+
+    List<BoardPhotoPrecheckResult> results = new ArrayList<>();
+
+    for (MultipartFile mf : photos) {
+      if (mf == null || mf.isEmpty()) continue;
+
+      String original = safeName(mf.getOriginalFilename());
+
+      // ✅ precheck 단계는 boardId가 없으므로 null로 전달 (FK 위반 방지)
+      BoardImageModerationService.ModerationResult r =
+          boardImageModerationService.check(null, loginMemberId, mf);
+
+      results.add(new BoardPhotoPrecheckResult(
+          original,
+          r.allowed,
+          r.reasonCode,
+          r.reasonText,
+          r.score
+      ));
+    }
+
+    return results;
+  }
 }
+

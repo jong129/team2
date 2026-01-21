@@ -14,7 +14,7 @@ public class ChatSessionDto {
         private String title;
     }
 
-    // 세션 응답 DTO
+    // 세션 응답 DTO : 세션 리스트용
     @Getter @Setter
     @NoArgsConstructor
     @AllArgsConstructor
@@ -34,7 +34,7 @@ public class ChatSessionDto {
         }
     }
 
-    // (선택) 생성 응답
+    // 생성 응답
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor

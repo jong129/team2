@@ -21,16 +21,14 @@ public class ChatSessionCont {
 
     private final ChatSessionService sessionService;
 
-    // (추가/수정) 회원: 커서 기반 세션 목록 (더보기)
+    // 회원: 커서 기반 세션 목록 (더보기)
     // GET /api/chat/sessions?cursor=2026-01-06T09:00:00&size=30
     @GetMapping("")
-    public ResponseEntity<?> listMySessionsCursor(
-        @RequestParam(name="cursor", required=false)
-        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-        LocalDateTime cursor,
-        @RequestParam(name="size", defaultValue="30") int size,
-        HttpSession httpSession
-    ) {
+    public ResponseEntity<?> listMySessionsCursor(@RequestParam(name="cursor", required=false)
+                                                                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                                                                     LocalDateTime cursor,
+                                                                     @RequestParam(name="size", defaultValue="30") int size,
+                                                                     HttpSession httpSession) {
         Long memberId = AuthSessionUtil.requireMemberId(httpSession);
         Map<String, Object> out = sessionService.listMySessionsCursor(memberId, cursor, size);
         return ResponseEntity.ok(out);
@@ -39,10 +37,8 @@ public class ChatSessionCont {
     // 세션 생성
     // POST /api/chat/sessions
     @PostMapping("")
-    public ResponseEntity<ChatSessionDto.SessionCreateResponse> create(
-        @RequestBody(required = false) ChatSessionDto.SessionCreateRequest req,
-        HttpSession httpSession
-    ) {
+    public ResponseEntity<ChatSessionDto.SessionCreateResponse> create(@RequestBody(required = false) ChatSessionDto.SessionCreateRequest req,
+                                                                                                   HttpSession httpSession) {
         Long memberId = AuthSessionUtil.requireMemberId(httpSession);
         String title = (req == null) ? null : req.getTitle();
 
@@ -70,12 +66,9 @@ public class ChatSessionCont {
             .build());
     }
 
-    // 세션 title 업데이트용 API
+    // 세션 제목 갱신 API
     @PatchMapping("/{sessionId}/title")
-    public ResponseEntity<?> updateTitle(
-        @PathVariable("sessionId") Long sessionId,
-        HttpSession httpSession
-    ) {
+    public ResponseEntity<?> updateTitle(@PathVariable("sessionId") Long sessionId, HttpSession httpSession) {
         Long memberId = AuthSessionUtil.requireMemberId(httpSession);
 
         // 제목 갱신 시도
@@ -86,7 +79,7 @@ public class ChatSessionCont {
         return ResponseEntity.ok(Map.of("title", s.getTitle()));
     }
 
-    // (기존) 날짜별 세션 그룹
+    // 날짜별 세션 그룹
     // GET /api/chat/sessions/grouped
     @GetMapping("/grouped")
     public ResponseEntity<List<ChatSessionDto.GroupedByDate<ChatSessionDto.SessionItem>>> grouped(HttpSession httpSession) {

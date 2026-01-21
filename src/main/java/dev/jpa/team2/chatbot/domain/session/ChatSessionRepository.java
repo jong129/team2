@@ -11,14 +11,16 @@ import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
 public interface ChatSessionRepository extends JpaRepository<ChatSession, Long> {
-
+    // 소유권 확인용
     Optional<ChatSession> findBySessionIdAndMemberId(Long sessionId, Long memberId);
-
+    
+    // 최신 ACTIVE 세션 찾기
     Optional<ChatSession> findTopByMemberIdAndSessionStatusOrderByLastMessageAtDesc(Long memberId, String sessionStatus);
-
+    
+    // ACTIVE 세션 전체 목록
     List<ChatSession> findByMemberIdAndSessionStatusOrderByLastMessageAtDesc(Long memberId, String sessionStatus);
     
-    // 회원: 커서 기반 세션 목록 (ACTIVE만)
+    // 회원: 커서 기반 세션 목록 (더보기) : cursor가 없으면 첫 페이지, cursor가 있으면 lastMessageAt <  cursor인 것들만 내려줌. 최신순 정렬
     @Query("""
         SELECT s
         FROM ChatSession s
@@ -33,7 +35,7 @@ public interface ChatSessionRepository extends JpaRepository<ChatSession, Long> 
         Pageable pageable
     );
     
-    // 관리자: 전체 세션 조회(필터 포함)
+    // 관리자: 전체 세션 조회 (필터 + 페이지)
     @Query("""
         SELECT s
         FROM ChatSession s

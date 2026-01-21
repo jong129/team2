@@ -1,76 +1,55 @@
 package dev.jpa.team2.checklist.model;
 
+import java.util.Date;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.time.LocalDateTime;
-
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "CHECKLIST_ITEM_MASTER")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
+@SequenceGenerator(
+    name = "SEQ_CHECKLIST_ITEM_MASTER_GEN",
+    sequenceName = "SEQ_CHECKLIST_ITEM_MASTER_ID",
+    allocationSize = 1
+)
 public class ChecklistItemMaster {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_CHECKLIST_ITEM_MASTER_ID")
-  @SequenceGenerator(
-      name = "SEQ_CHECKLIST_ITEM_MASTER_ID",
-      sequenceName = "SEQ_CHECKLIST_ITEM_MASTER_ID",
-      allocationSize = 1
-  )
-  @Column(name = "ITEM_MASTER_ID")
-  private Long itemMasterId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_CHECKLIST_ITEM_MASTER_GEN")
+    @Column(name = "ITEM_MASTER_ID")
+    private Long itemMasterId;
 
-  @Enumerated(EnumType.STRING)
-  @Column(name = "PHASE", nullable = false, length = 10)
-  private Phase phase; // PRE/POST
+    @Column(name = "PHASE", length = 10)
+    private String phase;
 
-  @Column(name = "POST_GROUP_CODE", length = 30)
-  private String postGroupCode; // POST_A/B/C/D or null
+    @Column(name = "POST_GROUP_CODE", length = 30)
+    private String postGroupCode;
 
-  @Column(name = "TITLE", nullable = false, length = 200)
-  private String title;
+    @Column(name = "CHECK_AREA", length = 50)
+    private String checkArea;
 
-  @Column(name = "DESCRIPTION", length = 1000)
-  private String description;
+    @Column(name = "TITLE", length = 200, nullable = false)
+    private String title;
 
-  @Lob
-  @Column(name = "TAGS_JSON")
-  private String tagsJson;
+    @Column(name = "DESCRIPTION", length = 1000)
+    private String description;
 
-  @Column(name = "ACTIVE_YN", nullable = false, length = 1)
-  private String activeYn; // Y/N
+    @Column(name = "ACTIVE_YN", length = 1)
+    private String activeYn = "Y";
 
-  @Column(name = "CREATED_AT", nullable = false)
-  private LocalDateTime createdAt;
+    @Lob
+    @Column(name = "TAGS_JSON")
+    private String tagsJson;
 
-  @Column(name = "UPDATED_AT", nullable = false)
-  private LocalDateTime updatedAt;
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "CREATED_AT", nullable = false)
+    private Date createdAt = new Date();
 
-  @PrePersist
-  void prePersist() {
-    LocalDateTime now = LocalDateTime.now();
-    if (activeYn == null) activeYn = "Y";
-    if (createdAt == null) createdAt = now;
-    if (updatedAt == null) updatedAt = now;
-  }
-
-  @PreUpdate
-  void preUpdate() {
-    updatedAt = LocalDateTime.now();
-  }
-
-  public void changeActive(String yn) {
-    this.activeYn = yn;
-    this.updatedAt = LocalDateTime.now();
-  }
-
-  public void updateText(String title, String description, String tagsJson) {
-    this.title = title;
-    this.description = description;
-    this.tagsJson = tagsJson;
-    this.updatedAt = LocalDateTime.now();
-  }
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "UPDATED_AT", nullable = false)
+    private Date updatedAt = new Date();
 }

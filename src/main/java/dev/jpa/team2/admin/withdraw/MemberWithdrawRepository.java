@@ -19,7 +19,8 @@ public interface MemberWithdrawRepository extends JpaRepository<MemberWithdraw, 
       m.name,
       w.reasonCode,
       w.reasonText,
-      w.createdAt
+      w.createdAt,
+      m.status
     )
     from MemberWithdraw w
       join w.member m

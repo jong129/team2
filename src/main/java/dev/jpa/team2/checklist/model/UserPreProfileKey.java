@@ -1,60 +1,36 @@
 package dev.jpa.team2.checklist.model;
 
+import java.util.Date;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.time.LocalDateTime;
-
-/**
- * USER_PRE_PROFILE_KEY
- *
- * ✔ PRE 체크 결과 요약(JSON)
- * ✔ 동일 패턴 재사용을 위한 해시 키
- */
-@Entity
-@Table(
-    name = "USER_PRE_PROFILE_KEY",
-    uniqueConstraints = {
-        @UniqueConstraint(
-            name = "UQ_USER_PRE_PROFILE_KEY_HASH",
-            columnNames = {"KEY_HASH"}
-        )
-    }
-)
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Entity
+@Table(name = "USER_PRE_PROFILE_KEY")
+@SequenceGenerator(
+    name = "SEQ_USER_PRE_PROFILE_KEY_GEN",
+    sequenceName = "SEQ_USER_PRE_PROFILE_KEY_ID",
+    allocationSize = 1
+)
 public class UserPreProfileKey {
 
     @Id
-    @GeneratedValue(
-        strategy = GenerationType.SEQUENCE,
-        generator = "SEQ_USER_PRE_PROFILE_KEY_ID"
-    )
-    @SequenceGenerator(
-        name = "SEQ_USER_PRE_PROFILE_KEY_ID",
-        sequenceName = "SEQ_USER_PRE_PROFILE_KEY_ID",
-        allocationSize = 1
-    )
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_USER_PRE_PROFILE_KEY_GEN")
     @Column(name = "PROFILE_KEY_ID")
     private Long profileKeyId;
 
-    @Column(name = "KEY_HASH", nullable = false, length = 64)
+    @Column(name = "KEY_HASH", length = 64, nullable = false, unique = true)
     private String keyHash;
 
     @Lob
     @Column(name = "KEY_JSON", nullable = false)
     private String keyJson;
 
+    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CREATED_AT", nullable = false)
-    private LocalDateTime createdAt;
-
-    @PrePersist
-    public void prePersist() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-    }
+    private Date createdAt = new Date();
 }

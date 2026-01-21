@@ -169,11 +169,11 @@ public class MemberCont {
 
     // ✅ 탈퇴 계정 차단 (가장 먼저)
     if ("WITHDRAWN".equals(member.getStatus())) {
-      // 실패 로그 남기고 싶으면 유지
       loginHistoryService.record(member.getMemberId(), false, request);
 
       map.put("cnt", 4);
-      map.put("message", "탈퇴 처리된 계정입니다. 관리자에게 문의하세요.");
+      map.put("message", "탈퇴한 회원입니다.");
+      map.put("status", member.getStatus()); // 프론트가 status로도 처리 가능하게 (선택이지만 추천)
       return ResponseEntity.ok(map);
     }
 

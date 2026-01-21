@@ -1,99 +1,84 @@
 package dev.jpa.team2.checklist.model;
 
+import java.util.Date;
+
+import dev.jpa.team2.checklist.enums.ChecklistPhase;
+import dev.jpa.team2.checklist.enums.TemplateStatus;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.time.LocalDateTime;
-
-/**
- * CHECKLIST_TEMPLATE
- *
- * ✔ 사전/사후 체크리스트 템플릿 메타 정보
- * ✔ 버전 관리 대상
- * ✔ PRE / POST 분기 + POST_GROUP_CODE 제약 존재
- */
-@Entity
-@Table(name = "CHECKLIST_TEMPLATE")
 @Getter
 @Setter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
+@NoArgsConstructor
+@Entity
+@Table(name = "CHECKLIST_TEMPLATE")
+@SequenceGenerator(
+    name = "SEQ_CHECKLIST_TEMPLATE_GEN",
+    sequenceName = "SEQ_CHECKLIST_TEMPLATE_ID",
+    allocationSize = 1
+)
 public class ChecklistTemplate {
 
-    /**
-     * TEMPLATE_ID (PK)
-     * SEQ_CHECKLIST_TEMPLATE_ID 사용
-     */
     @Id
-    @GeneratedValue(
-            strategy = GenerationType.SEQUENCE,
-            generator = "SEQ_CHECKLIST_TEMPLATE_ID"
-    )
-    @SequenceGenerator(
-            name = "SEQ_CHECKLIST_TEMPLATE_ID",
-            sequenceName = "SEQ_CHECKLIST_TEMPLATE_ID",
-            allocationSize = 1
-    )
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_CHECKLIST_TEMPLATE_GEN")
     @Column(name = "TEMPLATE_ID")
     private Long templateId;
 
-    /**
-     * 단계 (PRE / POST)
-     */
     @Enumerated(EnumType.STRING)
-    @Column(name = "PHASE", nullable = false, length = 10)
-    private Phase phase;
+    @Column(name = "PHASE", length = 10, nullable = false)
+    private ChecklistPhase phase;
 
-    /**
-     * 사후 체크리스트 그룹 코드
-     *  - PRE  : NULL
-     *  - POST : 필수 (POST_A / POST_B / POST_C ...)
-     */
     @Column(name = "POST_GROUP_CODE", length = 30)
     private String postGroupCode;
 
-    /**
-     * 템플릿 이름 (화면 표시용)
-     */
-    @Column(name = "TEMPLATE_NAME", nullable = false, length = 200)
+    @Column(name = "TEMPLATE_NAME", length = 200, nullable = false)
     private String templateName;
 
-    /**
-     * 버전 번호
-     */
     @Column(name = "VERSION_NO", nullable = false)
-    private Integer versionNo;
+    private Integer versionNo = 1;
 
-    /**
-     * 템플릿 상태 (DRAFT / ACTIVE / RETIRED)
-     */
     @Enumerated(EnumType.STRING)
-    @Column(name = "STATUS", nullable = false, length = 20)
-    private TemplateStatus status;
+    @Column(name = "STATUS", length = 20, nullable = false)
+    private TemplateStatus status = TemplateStatus.DRAFT;
 
-    /**
-     * 템플릿 설명
-     */
     @Column(name = "DESCRIPTION", length = 1000)
     private String description;
 
-    /**
-     * 생성일
-     */
-    @Column(name = "CREATED_AT", nullable = false)
-    private LocalDateTime createdAt;
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "CREATED_AT", nullable = false, updatable = false)
+    private Date createdAt;
 
-    /**
-     * 수정일
-     */
+    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "UPDATED_AT", nullable = false)
-    private LocalDateTime updatedAt;
+    private Date updatedAt;
     
-    public void changeStatus(TemplateStatus status) {
-      this.status = status;
-      this.updatedAt = java.time.LocalDateTime.now();
+    /* =========================
+     * ✅ 생성 시점 자동 세팅
+     * ========================= */
+    @PrePersist
+    protected void onCreate() {
+        Date now = new Date();
+        this.createdAt = now;
+        this.updatedAt = now;
     }
 
-
+    /* =========================
+     * ✅ 수정 시점 자동 갱신
+     * ========================= */
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = new Date();
+    }
+    
+    /* =========================
+     * ✅ 템플릿 구성 항목 (추가)
+     * ========================= */
+    @OneToMany(
+        mappedBy = "template",
+        fetch = FetchType.LAZY
+    )
+    private java.util.List<ChecklistTemplateItem> templateItems
+            = new java.util.ArrayList<>();
 }

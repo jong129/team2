@@ -1,57 +1,57 @@
 package dev.jpa.team2.checklist.model;
 
+import java.util.Date;
+
+import dev.jpa.team2.checklist.enums.Yn;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.time.LocalDateTime;
-
-@Entity
-@Table(name = "CHECKLIST_TEMPLATE_ITEM")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
+@Setter
+@NoArgsConstructor
+@Entity
+@Table(
+    name = "CHECKLIST_TEMPLATE_ITEM",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"TEMPLATE_ID", "ITEM_ORDER"})
+    }
+)
 public class ChecklistTemplateItem {
 
-  @EmbeddedId
-  private ChecklistTemplateItemId id;
+    /** ✅ 복합 PK */
+    @EmbeddedId
+    private ChecklistTemplateItemId id;
 
-  @MapsId("templateId")
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "TEMPLATE_ID", nullable = false)
-  private ChecklistTemplate template;
+    /** ✅ 템플릿 (PK 일부) */
+    @MapsId("templateId")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "TEMPLATE_ID", nullable = false)
+    private ChecklistTemplate template;
 
-  @MapsId("itemMasterId")
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "ITEM_MASTER_ID", nullable = false)
-  private ChecklistItemMaster itemMaster;
+    /** ✅ 아이템 마스터 (PK 일부) */
+    @MapsId("itemMasterId")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ITEM_MASTER_ID", nullable = false)
+    private ChecklistItemMaster itemMaster;
 
-  @Column(name = "ITEM_ORDER", nullable = false)
-  private Integer itemOrder;
+    @Column(name = "ITEM_ORDER", nullable = false)
+    private Integer itemOrder;
 
-  @Column(name = "REQUIRED_YN", nullable = false, length = 1)
-  private String requiredYn; // Y/N
+    @Enumerated(EnumType.STRING)
+    @Column(name = "REQUIRED_YN", length = 1)
+    private Yn requiredYn = Yn.Y;
 
-  @Column(name = "ACTIVE_YN", nullable = false, length = 1)
-  private String activeYn; // Y/N
+    @Enumerated(EnumType.STRING)
+    @Column(name = "ACTIVE_YN", length = 1)
+    private Yn activeYn = Yn.Y;
 
-  @Column(name = "CREATED_AT", nullable = false)
-  private LocalDateTime createdAt;
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "CREATED_AT", nullable = false)
+    private Date createdAt = new Date();
 
-  @Column(name = "UPDATED_AT", nullable = false)
-  private LocalDateTime updatedAt;
-
-  @PrePersist
-  void prePersist() {
-    LocalDateTime now = LocalDateTime.now();
-    if (requiredYn == null) requiredYn = "Y";
-    if (activeYn == null) activeYn = "Y";
-    if (createdAt == null) createdAt = now;
-    if (updatedAt == null) updatedAt = now;
-  }
-
-  @PreUpdate
-  void preUpdate() {
-    updatedAt = LocalDateTime.now();
-  }
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "UPDATED_AT", nullable = false)
+    private Date updatedAt = new Date();
 }

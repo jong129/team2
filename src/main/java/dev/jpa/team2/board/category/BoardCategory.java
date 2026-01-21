@@ -56,6 +56,15 @@ public class BoardCategory {
   @Column(name = "UPDATED_AT")
   private LocalDateTime updatedAt;
 
+  @Column(name = "AI_SUMMARY_YN", nullable = false, length = 1)
+  private String aiSummaryYn;
+
+  @Column(name = "AI_SENTIMENT_YN", nullable = false, length = 1)
+  private String aiSentimentYn;
+
+  @Column(name = "AI_WRITE_YN", nullable = false, length = 1)
+  private String aiWriteYn;
+
   @PrePersist
   void prePersist() {
     if (visibleYn == null) visibleYn = "Y";
@@ -69,6 +78,10 @@ public class BoardCategory {
 
     if (sortNo == null) sortNo = 0;
     if (createdAt == null) createdAt = LocalDateTime.now();
+
+    if (aiSummaryYn == null) aiSummaryYn = "N";
+    if (aiSentimentYn == null) aiSentimentYn = "N";
+    if (aiWriteYn == null) aiWriteYn = "N";
   }
 
   @PreUpdate

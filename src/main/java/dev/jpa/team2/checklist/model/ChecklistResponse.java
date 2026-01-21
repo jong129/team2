@@ -1,64 +1,44 @@
 package dev.jpa.team2.checklist.model;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
+import dev.jpa.team2.checklist.enums.CheckStatus;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-/**
- * CHECKLIST_RESPONSE
- * - 한 세션(session)에서 한 항목(item)에 대한 체크 상태 저장
- * - (SESSION_ID, ITEM_ID) 유니크
- */
-@Entity
-@Table(
-        name = "CHECKLIST_RESPONSE",
-        uniqueConstraints = {
-                @UniqueConstraint(name = "UQ_CHECKLIST_RESPONSE_SESSION_ITEM", columnNames = {"SESSION_ID", "ITEM_ID"})
-        }
-)
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Entity
+@Table(name = "CHECKLIST_RESPONSE",
+       uniqueConstraints = {
+           @UniqueConstraint(columnNames = {"SESSION_ID", "ITEM_ID"})
+       })
+@SequenceGenerator(
+    name = "SEQ_CHECKLIST_RESPONSE_GEN",
+    sequenceName = "SEQ_CHECKLIST_RESPONSE_ID",
+    allocationSize = 1
+)
 public class ChecklistResponse {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_CHECKLIST_RESPONSE_ID")
-    @SequenceGenerator(
-            name = "SEQ_CHECKLIST_RESPONSE_ID",
-            sequenceName = "SEQ_CHECKLIST_RESPONSE_ID",
-            allocationSize = 1
-    )
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_CHECKLIST_RESPONSE_GEN")
     @Column(name = "RESPONSE_ID")
     private Long responseId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "SESSION_ID", nullable = false)
-    private ChecklistSession session;
+    @Column(name = "SESSION_ID", nullable = false)
+    private Long sessionId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ITEM_ID", nullable = false)
-    private ChecklistItem item;
+    @Column(name = "ITEM_ID", nullable = false)
+    private Long itemId;
 
-    /**
-     * DONE / NOT_DONE / NOT_REQUIRED
-     * (일단 String으로 두고, 나중에 enum으로 바꿔도 됨)
-     */
-    @Column(name = "CHECK_STATUS", nullable = false, length = 20)
-    private String checkStatus;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "CHECK_STATUS", length = 20)
+    private CheckStatus checkStatus;
 
+    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "UPDATED_AT", nullable = false)
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    public void prePersist() {
-        if (this.updatedAt == null) this.updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
+    private Date updatedAt = new Date();
 }

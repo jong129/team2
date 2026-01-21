@@ -61,11 +61,7 @@ public class PostChecklistSessionService {
 
     if (preSessionId == null) {
       preSession = sessionRepository
-          .findTopByMemberIdAndPhaseAndStatusOrderBySessionIdDesc(
-              memberId,
-              ChecklistPhase.PRE,
-              SessionStatus.COMPLETED
-          )
+          .findTopByMemberIdAndPhaseAndStatusOrderBySessionIdDesc(memberId, ChecklistPhase.PRE, SessionStatus.COMPLETED)
           .orElseThrow(() -> new IllegalStateException("완료된 PRE 체크리스트가 없습니다."));
     } else {
       preSession = sessionRepository.findById(preSessionId)
@@ -83,150 +79,103 @@ public class PostChecklistSessionService {
     }
 
     /*
-     * =================================================
-     * 3️⃣ POST_GROUP_CODE 결정 (항상 서버 판단)
-     * =================================================
+     * ================================================= 3️⃣ POST_GROUP_CODE 결정 (항상
+     * 서버 판단) =================================================
      */
     PostDecisionResult decisionResult = resolvePostGroupCode(preSession);
     String postGroupCode = decisionResult.postGroupCode;
 
-    log.info(
-        "[POST][DECISION] preSessionId={}, postGroupCode={}, riskScoreSum={}",
-        preSession.getSessionId(),
-        decisionResult.postGroupCode,
-        decisionResult.riskScoreSum
-    );
+    log.info("[POST][DECISION] preSessionId={}, postGroupCode={}, riskScoreSum={}", preSession.getSessionId(),
+        decisionResult.postGroupCode, decisionResult.riskScoreSum);
 
     // 4️⃣ 같은 PRE 세션에서 시작된 POST 진행중 세션 이어하기
     return sessionRepository
-        .findByPreSessionIdAndPhaseAndStatus(
-            preSession.getSessionId(),
-            ChecklistPhase.POST,
-            SessionStatus.IN_PROGRESS
-        )
+        .findByPreSessionIdAndPhaseAndStatus(preSession.getSessionId(), ChecklistPhase.POST, SessionStatus.IN_PROGRESS)
         .map(s -> {
           // 방어 로직
           if (!itemRepository.existsBySessionId(s.getSessionId())) {
             throw new IllegalStateException("POST 세션에 체크리스트 항목이 없습니다. 새로 시작하세요.");
           }
-          return new PostStartResponse(
-              s.getSessionId(),
-              postGroupCode,
-              s.getTemplateId()
-          );
+          return new PostStartResponse(s.getSessionId(), postGroupCode, s.getTemplateId());
         })
         // 5️⃣ 없으면 신규 POST 세션 생성
-        .orElseGet(() ->
-            createNewPostSession(
-                memberId,
-                postGroupCode,
-                preSession,
-                decisionResult
-            )
-        );
+        .orElseGet(() -> createNewPostSession(memberId, postGroupCode, preSession, decisionResult));
   }
 
-
   /**
-   * PRE 결과 기반 POST_GROUP_CODE 결정
-   * - 모든 PRE 체크리스트 항목을 AI로 평가
-   * - DONE / NOT_DONE 여부와 관계없이 AI 점수 기준 분기
+   * PRE 결과 기반 POST_GROUP_CODE 결정 - 모든 PRE 체크리스트 항목을 AI로 평가 - DONE / NOT_DONE 여부와
+   * 관계없이 AI 점수 기준 분기
    */
   private PostDecisionResult resolvePostGroupCode(ChecklistSession preSession) {
 
-      log.info(
-          "[POST][RESOLVE] start resolvePostGroupCode preSessionId={}",
-          preSession.getSessionId()
-      );
+    log.info("[POST][RESOLVE] start resolvePostGroupCode preSessionId={}", preSession.getSessionId());
 
-      // 1️⃣ PRE 세션의 모든 응답 조회 (DONE / NOT_DONE 포함)
-      List<ChecklistResponse> responses =
-          responseRepository.findBySessionId(preSession.getSessionId());
+    // 1️⃣ PRE 세션의 모든 응답 조회 (DONE / NOT_DONE 포함)
+    List<ChecklistResponse> responses = responseRepository.findBySessionId(preSession.getSessionId());
 
-      if (responses.isEmpty()) {
-          // 응답 자체가 없으면 가장 안전한 POST_A
-          return new PostDecisionResult("POST_A", 0.0, null);
+    if (responses.isEmpty()) {
+      // 응답 자체가 없으면 가장 안전한 POST_A
+      return new PostDecisionResult("POST_A", 0.0, null);
+    }
+
+    // 2️⃣ 응답에 해당하는 모든 ITEM 조회
+    List<Long> itemIds = responses.stream().map(ChecklistResponse::getItemId).distinct().toList();
+
+    List<ChecklistItem> items = itemRepository.findBySessionIdAndItemIdIn(preSession.getSessionId(), itemIds);
+
+    if (items.isEmpty()) {
+      return new PostDecisionResult("POST_A", 0.0, null);
+    }
+
+    // 3️⃣ AI 점수 요청 DTO 생성 (⚠️ 전 항목 포함)
+    ChecklistScoreRequest scoreRequest = new ChecklistScoreRequest();
+    scoreRequest.setItems(items.stream().map(item -> {
+      ChecklistScoreItem dto = new ChecklistScoreItem();
+      dto.setItemId(item.getItemId());
+      dto.setTitle(item.getTitle());
+      dto.setDescription(item.getDescription());
+      return dto;
+    }).toList());
+
+    // 4️⃣ 🔥 FastAPI AI 서버 호출 (항상 호출)
+    ChecklistScoreResponse scoreResponse = checklistAiScoreClient.scoreChecklistItems(scoreRequest);
+
+    if (scoreResponse == null || scoreResponse.getScores() == null) {
+
+      log.warn("[POST][RESOLVE][AI_FAIL] AI score unavailable. fallback to POST_B. preSessionId={}",
+          preSession.getSessionId());
+
+      // AI 판단 불가 → 보수적 분기
+      return new PostDecisionResult("POST_B", 0.0, null);
+    }
+
+    // 5️⃣ 점수 집계 + 고위험 항목 판별
+    double riskScoreSum = 0.0;
+    List<Long> highRiskItemIds = new java.util.ArrayList<>();
+
+    for (ChecklistScoreResult score : scoreResponse.getScores()) {
+
+      if (score.getImportanceScore() == null) {
+        continue;
       }
 
-      // 2️⃣ 응답에 해당하는 모든 ITEM 조회
-      List<Long> itemIds = responses.stream()
-          .map(ChecklistResponse::getItemId)
-          .distinct()
-          .toList();
+      riskScoreSum += score.getImportanceScore();
 
-      List<ChecklistItem> items =
-          itemRepository.findBySessionIdAndItemIdIn(
-              preSession.getSessionId(),
-              itemIds
-          );
-
-      if (items.isEmpty()) {
-          return new PostDecisionResult("POST_A", 0.0, null);
+      // ⚠️ 고위험 기준 (조정 가능)
+      if (score.getImportanceScore() >= 0.8) {
+        highRiskItemIds.add(score.getItemId());
       }
+    }
 
-      // 3️⃣ AI 점수 요청 DTO 생성 (⚠️ 전 항목 포함)
-      ChecklistScoreRequest scoreRequest = new ChecklistScoreRequest();
-      scoreRequest.setItems(
-          items.stream().map(item -> {
-              ChecklistScoreItem dto = new ChecklistScoreItem();
-              dto.setItemId(item.getItemId());
-              dto.setTitle(item.getTitle());
-              dto.setDescription(item.getDescription());
-              return dto;
-          }).toList()
-      );
+    // 6️⃣ POST 분기 결정 (AI 기준 단일화)
+    String postGroupCode = (!highRiskItemIds.isEmpty() || riskScoreSum >= 1.5) ? "POST_B" : "POST_A";
 
-      // 4️⃣ 🔥 FastAPI AI 서버 호출 (항상 호출)
-      ChecklistScoreResponse scoreResponse =
-          checklistAiScoreClient.scoreChecklistItems(scoreRequest);
+    log.info("[POST][RESOLVE][AI] groupCode={}, riskScoreSum={}, highRiskItemCount={}", postGroupCode, riskScoreSum,
+        highRiskItemIds.size());
 
-      if (scoreResponse == null || scoreResponse.getScores() == null) {
-          // AI 장애 시 안전하게 POST_A
-          return new PostDecisionResult("POST_A", 0.0, null);
-      }
-
-      // 5️⃣ 점수 집계 + 고위험 항목 판별
-      double riskScoreSum = 0.0;
-      List<Long> highRiskItemIds = new java.util.ArrayList<>();
-
-      for (ChecklistScoreResult score : scoreResponse.getScores()) {
-
-          if (score.getImportanceScore() == null) {
-              continue;
-          }
-
-          riskScoreSum += score.getImportanceScore();
-
-          // ⚠️ 고위험 기준 (조정 가능)
-          if (score.getImportanceScore() >= 0.8) {
-              highRiskItemIds.add(score.getItemId());
-          }
-      }
-
-      // 6️⃣ POST 분기 결정 (AI 기준 단일화)
-      String postGroupCode =
-          (!highRiskItemIds.isEmpty() || riskScoreSum >= 1.5)
-              ? "POST_B"
-              : "POST_A";
-
-      log.info(
-          "[POST][RESOLVE][AI] groupCode={}, riskScoreSum={}, highRiskItemCount={}",
-          postGroupCode,
-          riskScoreSum,
-          highRiskItemIds.size()
-      );
-
-      return new PostDecisionResult(
-          postGroupCode,
-          riskScoreSum,
-          highRiskItemIds.isEmpty()
-              ? null
-              : highRiskItemIds.stream()
-                  .map(String::valueOf)
-                  .collect(Collectors.joining(","))
-      );
+    return new PostDecisionResult(postGroupCode, riskScoreSum, highRiskItemIds.isEmpty() ? null
+        : highRiskItemIds.stream().map(String::valueOf).collect(Collectors.joining(",")));
   }
-
 
   /**
    * 신규 POST 세션 생성

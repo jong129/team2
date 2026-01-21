@@ -1,5 +1,6 @@
 package dev.jpa.team2.checklist.dto;
 
+import dev.jpa.team2.checklist.enums.CheckStatus;
 import dev.jpa.team2.checklist.enums.Yn;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,4 +14,5 @@ public class PreChecklistSessionItemDto {
     private String title;
     private String description;
     private Yn requiredYn;
+    CheckStatus checkStatus;
 }

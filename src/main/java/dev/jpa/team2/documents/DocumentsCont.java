@@ -137,7 +137,7 @@ public class DocumentsCont {
       reportDTO.setParsedJson(parsedJson);
       reportDTO.setAiExplanation(aiExplanation);
 
-      if ("REGISTRY".equals(docType)) {
+      if (!"UNKNOWN".equals(docType)) {
         try {
           documentReportService.save(reportDTO);
           log.info("✅ DocumentReport 저장 OK => docId={}", docId);

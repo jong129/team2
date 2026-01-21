@@ -23,7 +23,7 @@ public class ChatSession {
     private String title;
 
     @Column(name = "SESSION_STATUS", nullable = false)
-    private String sessionStatus; // ACTIVE / ARCHIVED / DELETED
+    private String sessionStatus; // ACTIVE / DELETED
 
     @Column(name = "START_TIME")
     private LocalDateTime startTime;
@@ -31,15 +31,14 @@ public class ChatSession {
     @Column(name = "END_TIME")
     private LocalDateTime endTime;
 
-    // 세션 리스트 정렬에 핵심
+    // 세션 리스트 정렬 핵심
     @Column(name = "LAST_MESSAGE_AT")
     private LocalDateTime lastMessageAt;
 
-    // 삭제
     @Column(name = "DELETED_AT")
     private LocalDateTime deletedAt;
 
-    @PrePersist
+    @PrePersist // 자동 기본값 세팅
     public void prePersist() {
         if (this.sessionStatus == null) this.sessionStatus = "ACTIVE";
         if (this.startTime == null) this.startTime = LocalDateTime.now();

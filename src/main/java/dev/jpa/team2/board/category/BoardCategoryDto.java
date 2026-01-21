@@ -27,6 +27,10 @@ public class BoardCategoryDto {
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 
+  private String aiSummaryYn;
+  private String aiSentimentYn;
+  private String aiWriteYn;
+
   public static BoardCategoryDto fromEntity(BoardCategory e) {
     return BoardCategoryDto.builder()
         .categoryId(e.getCategoryId())
@@ -41,6 +45,9 @@ public class BoardCategoryDto {
         .sortNo(e.getSortNo())
         .createdAt(e.getCreatedAt())
         .updatedAt(e.getUpdatedAt())
+        .aiSummaryYn(e.getAiSummaryYn())
+        .aiSentimentYn(e.getAiSentimentYn())
+        .aiWriteYn(e.getAiWriteYn())
         .build();
   }
 }

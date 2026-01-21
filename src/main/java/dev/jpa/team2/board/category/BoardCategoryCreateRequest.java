@@ -15,5 +15,9 @@ public class BoardCategoryCreateRequest {
   private String secretYn;
   private String fileYn;
 
+  private String aiSummaryYn;
+  private String aiSentimentYn;
+  private String aiWriteYn;   
+
   private Integer sortNo;
 }

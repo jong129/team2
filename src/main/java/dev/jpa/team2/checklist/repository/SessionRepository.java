@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 
 import dev.jpa.team2.checklist.enums.ChecklistPhase;
 import dev.jpa.team2.checklist.enums.SessionStatus;
+import dev.jpa.team2.checklist.enums.Yn;
 import dev.jpa.team2.checklist.model.ChecklistSession;
 
 public interface SessionRepository
@@ -67,5 +68,14 @@ public interface SessionRepository
         ChecklistPhase phase,
         SessionStatus status
     );
+    
+    List<ChecklistSession>
+    findTop20ByPhaseAndStatusAndDeletedYnOrderByCompletedAtDesc(
+        ChecklistPhase phase,
+        SessionStatus status,
+        Yn deletedYn
+    );
+
+
 
 }

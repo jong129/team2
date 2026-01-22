@@ -70,4 +70,13 @@ public class BoardPhotoController {
     }
     return null;
   }
+  
+  @PostMapping(value = "/photos/precheck", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public ResponseEntity<List<BoardPhotoPrecheckResult>> precheck(
+      @RequestPart("photos") List<MultipartFile> photos,
+      HttpSession session
+  ) {
+    Long memberId = getLoginMemberId(session);
+    return ResponseEntity.ok(boardPhotoService.precheck(memberId, photos));
+  }
 }

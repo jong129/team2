@@ -73,7 +73,7 @@ public class DocumentsCont {
       // documentsDTO.setFile1(savedFilename); // 필드명 프로젝트에 맞게
 
       // 2) FastAPI 호출
-      String url = "http://121.160.42.21:8000/document/analyze";
+      String url = "http://121.160.42.81:8000/document/analyze";
       log.info("[FASTAPI] 요청 시작 url={}, image_path={}", url, savedFilename);
 
       HttpHeaders headers = new HttpHeaders();
@@ -99,8 +99,6 @@ public class DocumentsCont {
         throw new BusinessException(ErrorCode.FASTAPI_ERROR, "AI 응답 JSON 파싱 실패", e);
       }
 
-  
-
       String docType = root.path("doc_type").asText("UNKNOWN");
       String policyVersion = root.path("policy_version").asText("unknown");
       int riskScore = root.path("risk_score").asInt(0);
@@ -115,7 +113,7 @@ public class DocumentsCont {
 
       JsonNode aiNode = root.path("ai_explanation");
       String aiExplanation = (aiNode.isMissingNode() || aiNode.isNull()) ? null : aiNode.asText();
-      
+
       // ✅ 파싱 성공 로그
       log.info("✅ PARSE OK => docType={}, policyVersion={}, riskScore={}", docType, policyVersion, riskScore);
 
@@ -137,78 +135,68 @@ public class DocumentsCont {
       reportDTO.setParsedJson(parsedJson);
       reportDTO.setAiExplanation(aiExplanation);
 
-<<<<<<< HEAD
       if (!"UNKNOWN".equals(docType)) {
-=======
-       // ------------------------
-       // 6) RAG ingest (FastAPI /ingest) -- 추가
-       // ------------------------
-       try {
-         // (1) RAG로 넣을 텍스트 구성
-         String ragText =
-             "[문서 분석 결과]\n" +
-             "- 문서유형: " + docType + "\n" +
-             "- 위험점수: " + riskScore + "\n" +
-             "- 정책버전: " + policyVersion + "\n\n" +
-             "[근거(reasons)]\n" + (reasonsJson != null ? reasonsJson : "(없음)") + "\n\n" +
-             "[추출데이터(parsed)]\n" + (parsedJson != null ? parsedJson : "(없음)") + "\n\n" +
-             "[AI 설명]\n" + (aiExplanation != null ? aiExplanation : "(없음)");
-    
-         // (2) meta 구성 (✅ B안 핵심: user_id, doc_id 반드시 포함)
-         Map<String, Object> meta = new HashMap<>();
-         meta.put("user_id", String.valueOf(userId.longValue()));
-         meta.put("doc_id", String.valueOf(docId));
-         meta.put("doc_type", docType);
-         meta.put("stage", "document"); // 너희가 원하는 이름으로 통일
-    
-         // (3) docs[0] 구성
-         Map<String, Object> oneDoc = new HashMap<>();
-         oneDoc.put("id", "doc:" + docId);   // 문서 식별자(임의)
-         oneDoc.put("text", ragText);
-         oneDoc.put("meta", meta);
-         oneDoc.put("chunk", true);
-         oneDoc.put("chunk_size", 900);
-         oneDoc.put("overlap", 120);
-    
-         Map<String, Object> ingestBody = new HashMap<>();
-         ingestBody.put("docs", List.of(oneDoc));
-    
-         // (4) FastAPI /ingest 호출
-         String ingestUrl = "http://121.160.42.21:8000/ingest";
-    
-         HttpHeaders ingestHeaders = new HttpHeaders();
-         ingestHeaders.setContentType(MediaType.APPLICATION_JSON);
-    
-         HttpEntity<Map<String, Object>> ingestReq = new HttpEntity<>(ingestBody, ingestHeaders);
-    
-         String ingestRes = llmRequestConfig.getRestTemplate()
-             .postForObject(ingestUrl, ingestReq, String.class);
-    
-         log.info("✅ RAG ingest OK docId={}, res={}", docId, ingestRes);
-    
-       } catch (Exception ingestErr) {
-         log.error("❌ RAG ingest 실패 docId={}", docId, ingestErr);
-       }
-      
-      if ("REGISTRY".equals(docType)) {
->>>>>>> 08671547e638c5633800a8408c021329c454d7d0
+        // ------------------------
+        // 6) RAG ingest (FastAPI /ingest) -- 추가
+        // ------------------------
         try {
-          documentReportService.save(reportDTO);
-          log.info("✅ DocumentReport 저장 OK => docId={}", docId);
-        } catch (Exception e) {
-          log.error("❌ DocumentReport 저장 실패(파싱은 성공) docId={}", docId, e);
-          throw e;
-        }
-      } else {
-        log.info("ℹ️ Report 저장 스킵 docType={}", docType);
-      }
-      String fileNameOnly = Paths.get(savedFilename).getFileName().toString();
-      ((com.fasterxml.jackson.databind.node.ObjectNode) root)
-      .put("image_path", "/files/" + fileNameOnly);
-      String finalResponse = om.writeValueAsString(root);
-      log.info(finalResponse);
-      return ResponseEntity.ok(finalResponse);
+          // (1) RAG로 넣을 텍스트 구성
+          String ragText = "[문서 분석 결과]\n" + "- 문서유형: " + docType + "\n" + "- 위험점수: " + riskScore + "\n" + "- 정책버전: "
+              + policyVersion + "\n\n" + "[근거(reasons)]\n" + (reasonsJson != null ? reasonsJson : "(없음)") + "\n\n"
+              + "[추출데이터(parsed)]\n" + (parsedJson != null ? parsedJson : "(없음)") + "\n\n" + "[AI 설명]\n"
+              + (aiExplanation != null ? aiExplanation : "(없음)");
 
+          // (2) meta 구성 (✅ B안 핵심: user_id, doc_id 반드시 포함)
+          Map<String, Object> meta = new HashMap<>();
+          meta.put("user_id", String.valueOf(userId.longValue()));
+          meta.put("doc_id", String.valueOf(docId));
+          meta.put("doc_type", docType);
+          meta.put("stage", "document"); // 너희가 원하는 이름으로 통일
+
+          // (3) docs[0] 구성
+          Map<String, Object> oneDoc = new HashMap<>();
+          oneDoc.put("id", "doc:" + docId); // 문서 식별자(임의)
+          oneDoc.put("text", ragText);
+          oneDoc.put("meta", meta);
+          oneDoc.put("chunk", true);
+          oneDoc.put("chunk_size", 900);
+          oneDoc.put("overlap", 120);
+
+          Map<String, Object> ingestBody = new HashMap<>();
+          ingestBody.put("docs", List.of(oneDoc));
+
+          // (4) FastAPI /ingest 호출
+          String ingestUrl = "http://121.160.42.21:8000/ingest";
+
+          HttpHeaders ingestHeaders = new HttpHeaders();
+          ingestHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+          HttpEntity<Map<String, Object>> ingestReq = new HttpEntity<>(ingestBody, ingestHeaders);
+
+          String ingestRes = llmRequestConfig.getRestTemplate().postForObject(ingestUrl, ingestReq, String.class);
+
+          log.info("✅ RAG ingest OK docId={}, res={}", docId, ingestRes);
+
+        } catch (Exception ingestErr) {
+          log.error("❌ RAG ingest 실패 docId={}", docId, ingestErr);
+        }
+      }
+        if ("REGISTRY".equals(docType)) {
+          try {
+            documentReportService.save(reportDTO);
+            log.info("✅ DocumentReport 저장 OK => docId={}", docId);
+          } catch (Exception e) {
+            log.error("❌ DocumentReport 저장 실패(파싱은 성공) docId={}", docId, e);
+            throw e;
+          }
+        } else {
+          log.info("ℹ️ Report 저장 스킵 docType={}", docType);
+        }
+        String fileNameOnly = Paths.get(savedFilename).getFileName().toString();
+        ((com.fasterxml.jackson.databind.node.ObjectNode) root).put("image_path", "/files/" + fileNameOnly);
+        String finalResponse = om.writeValueAsString(root);
+        log.info(finalResponse);
+        return ResponseEntity.ok(finalResponse);
     } catch (RestClientException e) {
       throw new BusinessException(ErrorCode.FASTAPI_ERROR, "FastAPI 호출 실패: " + e.getMessage(), e);
     } catch (BusinessException e) {
@@ -220,22 +208,22 @@ public class DocumentsCont {
       MDC.clear();
     }
   }
+
   @GetMapping("/show")
   public ResponseEntity<List<AdminDocumentViewDTO>> show(@RequestParam("userId") Long userId) {
     return ResponseEntity.ok(documentsService.showByUserId(userId));
   }
-  
 
   @DeleteMapping("/delete/{docId}/report")
   public ResponseEntity<Void> deleteReport(@PathVariable("docId") Long docId) {
-      documentsService.deleteReportByDocId(docId);
-      
-      return ResponseEntity.noContent().build();
+    documentsService.deleteReportByDocId(docId);
+    return ResponseEntity.noContent().build();
   }
+
   @DeleteMapping("/delete/{docId}/document")
   public ResponseEntity<Void> deleteDocument(@PathVariable("docId") Long docId) {
-      documentsService.deleteDocumentByDocId(docId);
-      log.info("docId",docId);
-      return ResponseEntity.noContent().build();
+    documentsService.deleteDocumentByDocId(docId);
+    log.info("docId", docId);
+    return ResponseEntity.noContent().build();
   }
 }

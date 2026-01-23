@@ -73,7 +73,7 @@ public class DocumentsCont {
       // documentsDTO.setFile1(savedFilename); // 필드명 프로젝트에 맞게
 
       // 2) FastAPI 호출
-      String url = "http://121.160.42.21:8000/document/analyze";
+      String url = "http://121.160.42.81:8000/document/analyze";
       log.info("[FASTAPI] 요청 시작 url={}, image_path={}", url, savedFilename);
 
       HttpHeaders headers = new HttpHeaders();
@@ -171,7 +171,7 @@ public class DocumentsCont {
          ingestBody.put("docs", List.of(oneDoc));
     
          // (4) FastAPI /ingest 호출
-         String ingestUrl = "http://121.160.42.21:8000/ingest";
+         String ingestUrl = "http://121.160.42.81:8000/ingest";
     
          HttpHeaders ingestHeaders = new HttpHeaders();
          ingestHeaders.setContentType(MediaType.APPLICATION_JSON);
@@ -198,6 +198,22 @@ public class DocumentsCont {
       } else {
         log.info("ℹ️ Report 저장 스킵 docType={}", docType);
       }
+      // ✅ 응답 JSON에 "Spring DB docId"를 반드시 포함시킨다 (프론트가 이걸 저장해야 함)
+      if (root.isObject()) {
+        com.fasterxml.jackson.databind.node.ObjectNode obj = (com.fasterxml.jackson.databind.node.ObjectNode) root;
+
+        // FastAPI가 내려준 tmp/anonymous는 혼란이므로 Spring 값으로 덮어쓰기
+        obj.put("docId", docId);                          // ✅ 프론트용(카멜 케이스)
+        obj.put("userId", userId.longValue());            // ✅ 프론트용
+        obj.put("docType", docType);                      // ✅ 프론트용
+
+        // FastAPI 내부키도 같이 덮어주면(선택) 디버깅이 쉬움
+        obj.put("doc_id", String.valueOf(docId));         // ✅ snake_case도 docId로 통일
+        obj.put("user_id", String.valueOf(userId.longValue()));
+        obj.put("doc_type", docType);
+        obj.put("stage", "document");                     // ingest meta와 통일(선택)
+      }
+      
       String fileNameOnly = Paths.get(savedFilename).getFileName().toString();
       ((com.fasterxml.jackson.databind.node.ObjectNode) root)
       .put("image_path", "/files/" + fileNameOnly);
@@ -234,4 +250,11 @@ public class DocumentsCont {
       log.info("docId",docId);
       return ResponseEntity.noContent().build();
   }
+  
+  private Integer toInt(Object v) {
+    if (v == null) return null;
+    if (v instanceof Number n) return n.intValue();
+    try { return Integer.parseInt(String.valueOf(v)); } catch (Exception e) { return null; }
+}
+
 }

@@ -4,6 +4,8 @@ import dev.jpa.team2.board.BoardPhotoDto;
 import dev.jpa.team2.board.BoardPost;
 import dev.jpa.team2.board.BoardPostRepository;
 import dev.jpa.team2.member.member_role.MemberRoleService;
+import dev.jpa.team2.tool.BusinessException;
+import dev.jpa.team2.tool.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -17,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.*;
+import java.security.MessageDigest;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -28,18 +31,32 @@ public class BoardPhotoService {
   private final BoardPhotoRepository boardPhotoRepository;
   private final BoardPostRepository boardPostRepository;
   private final MemberRoleService memberRoleService;
-
-  // ✅ 추가
   private final BoardImageModerationService boardImageModerationService;
+  private final BoardPhotoPrecheckCache precheckCache;
 
   @Value("${board.photo.dir:uploads/board/photos}")
   private String baseDir;
+
+  private String sha256(MultipartFile mf) {
+    try {
+      byte[] bytes = mf.getBytes();
+      MessageDigest md = MessageDigest.getInstance("SHA-256");
+      byte[] dig = md.digest(bytes);
+      StringBuilder sb = new StringBuilder();
+      for (byte b : dig) sb.append(String.format("%02x", b));
+      return sb.toString();
+    } catch (Exception e) {
+      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "hash failed");
+    }
+  }
 
   @Transactional(readOnly = true)
   public List<BoardPhotoDto> list(Long boardId) {
     getPost(boardId);
     return boardPhotoRepository.findByBoardIdOrderByPhotoIdAsc(boardId)
-        .stream().map(BoardPhotoDto::from).collect(Collectors.toList());
+        .stream()
+        .map(BoardPhotoDto::from)
+        .collect(Collectors.toList());
   }
 
   public List<BoardPhotoDto> upload(Long boardId, Long loginMemberId, List<MultipartFile> photos) {
@@ -53,23 +70,43 @@ public class BoardPhotoService {
     }
 
     Path dir = Paths.get(baseDir).toAbsolutePath().normalize();
-    try { Files.createDirectories(dir); }
-    catch (IOException e) { throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "cannot create upload dir"); }
+    try {
+      Files.createDirectories(dir);
+    } catch (IOException e) {
+      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "cannot create upload dir");
+    }
 
     List<BoardPhotoDto> saved = new ArrayList<>();
 
     for (MultipartFile mf : photos) {
       if (mf == null || mf.isEmpty()) continue;
 
-      // ✅ 여기서 AI 판별 (부적절이면 예외 발생 + 로그 저장)
-      boardImageModerationService.checkOrThrow(boardId, loginMemberId, mf);
+      // ✅ A안 핵심: precheck 캐시 히트면 AI 재호출 스킵
+      String hash = sha256(mf);
+      BoardPhotoPrecheckCache.CacheValue cached = precheckCache.get(loginMemberId, hash);
+
+      if (cached != null) {
+        if (!cached.allowed()) {
+          throw new BusinessException(
+              ErrorCode.IMAGE_REJECTED,
+              (cached.reasonText() == null || cached.reasonText().isBlank()) ? "부적절한 이미지" : cached.reasonText()
+          );
+        }
+        // allowed=true면 통과(추가 AI 호출 없음)
+      } else {
+        // 캐시 미스면 보안상 재검증
+        boardImageModerationService.checkOrThrow(boardId, loginMemberId, mf);
+      }
 
       String original = safeName(mf.getOriginalFilename());
       String savedName = makeSavedName(original);
 
       Path target = dir.resolve(savedName).normalize();
-      try { mf.transferTo(target); }
-      catch (IOException e) { throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "photo save failed"); }
+      try {
+        mf.transferTo(target);
+      } catch (IOException e) {
+        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "photo save failed");
+      }
 
       BoardPhoto p = new BoardPhoto();
       p.setBoardId(boardId);
@@ -89,10 +126,15 @@ public class BoardPhotoService {
     Path dir = Paths.get(baseDir).toAbsolutePath().normalize();
     Path path = dir.resolve(p.getSavedName()).normalize();
 
-    if (!Files.exists(path)) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "photo missing on server");
+    if (!Files.exists(path)) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "photo missing on server");
+    }
 
-    try { return new UrlResource(path.toUri()); }
-    catch (MalformedURLException e) { throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "photo url error"); }
+    try {
+      return new UrlResource(path.toUri());
+    } catch (MalformedURLException e) {
+      throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "photo url error");
+    }
   }
 
   public void delete(Long photoId, Long loginMemberId) {
@@ -106,7 +148,9 @@ public class BoardPhotoService {
 
     Path dir = Paths.get(baseDir).toAbsolutePath().normalize();
     Path path = dir.resolve(p.getSavedName()).normalize();
-    try { Files.deleteIfExists(path); } catch (Exception ignored) {}
+    try {
+      Files.deleteIfExists(path);
+    } catch (Exception ignored) {}
 
     boardPhotoRepository.deleteById(photoId);
   }
@@ -138,7 +182,7 @@ public class BoardPhotoService {
     long ts = System.currentTimeMillis();
     return ts + "_" + uuid + "_" + original;
   }
-  
+
   @Transactional(readOnly = true)
   public List<BoardPhotoPrecheckResult> precheck(Long loginMemberId, List<MultipartFile> photos) {
     requireLogin(loginMemberId);
@@ -153,13 +197,18 @@ public class BoardPhotoService {
       if (mf == null || mf.isEmpty()) continue;
 
       String original = safeName(mf.getOriginalFilename());
+      String hash = sha256(mf);
 
-      // ✅ precheck 단계는 boardId가 없으므로 null로 전달 (FK 위반 방지)
+      // ✅ precheck는 boardId가 없으므로 null
       BoardImageModerationService.ModerationResult r =
           boardImageModerationService.check(null, loginMemberId, mf);
 
+      // ✅ 결과 캐시 저장(업로드에서 재사용)
+      precheckCache.put(loginMemberId, hash, r.allowed, r.reasonCode, r.reasonText, r.score);
+
       results.add(new BoardPhotoPrecheckResult(
           original,
+          hash,
           r.allowed,
           r.reasonCode,
           r.reasonText,
@@ -170,4 +219,3 @@ public class BoardPhotoService {
     return results;
   }
 }
-

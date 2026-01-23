@@ -10,6 +10,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class BoardPhotoPrecheckResult {
   private String filename;
+  private String sha256;      // ✅ 추가: 파일 해시
   private boolean allowed;
   private String reasonCode;  // AD|COMMERCIAL|SEXUAL|VIOLENCE|HATE|OTHER 등
   private String reasonText;  // 한글 1줄

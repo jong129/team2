@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import dev.jpa.team2.checklist.dto.PostChecklistDto;
+import dev.jpa.team2.checklist.dto.PostChecklistReviewResponse;
 import dev.jpa.team2.checklist.dto.PostChecklistSatisfactionDto;
 import dev.jpa.team2.checklist.dto.PostItemStatusDto;
 import dev.jpa.team2.checklist.dto.PostStartResponse;
@@ -30,19 +31,14 @@ public class PostChecklistSessionController {
   private final PostChecklistQueryService postChecklistQueryService;
 
   /**
-   * ✅ POST 체크리스트 세션 시작
-   * POST /checklists/post/session/start?memberId=&preSessionId=
+   * ✅ POST 체크리스트 세션 시작 POST
+   * /checklists/post/session/start?memberId=&preSessionId=
    */
   @PostMapping("/session/start")
-  public ResponseEntity<PostStartResponse> startPostSession(
-      @RequestParam(name = "memberId") Long memberId,
-      @RequestParam(name = "preSessionId", required = false) Long preSessionId
-  ) {
-      return ResponseEntity.ok(
-          postChecklistService.startPostSession(memberId, preSessionId)
-      );
+  public ResponseEntity<PostStartResponse> startPostSession(@RequestParam(name = "memberId") Long memberId,
+      @RequestParam(name = "preSessionId", required = false) Long preSessionId) {
+    return ResponseEntity.ok(postChecklistService.startPostSession(memberId, preSessionId));
   }
-
 
   /**
    * ✅ POST 체크리스트 세션 화면 진입용 조회 GET /checklists/post/session/{sessionId}
@@ -72,60 +68,52 @@ public class PostChecklistSessionController {
   }
 
   /**
-   * ✅ POST 체크리스트 세션 완료 처리
-   * PATCH /checklists/post/session/{sessionId}/complete
+   * ✅ POST 체크리스트 세션 완료 처리 PATCH /checklists/post/session/{sessionId}/complete
    */
   @PatchMapping("/session/{sessionId}/complete")
-  public ResponseEntity<Void> completePostSession(
-      @PathVariable("sessionId") Long sessionId
-  ) {
+  public ResponseEntity<Void> completePostSession(@PathVariable("sessionId") Long sessionId) {
     System.out.println("### COMPLETE SESSION HIT: " + sessionId);
-      postChecklistService.completeSession(sessionId);
-      return ResponseEntity.ok().build();
+    postChecklistService.completeSession(sessionId);
+    return ResponseEntity.ok().build();
   }
 
   /**
-   * ✅ POST 체크리스트 만족도 조회
-   * GET /checklists/post/session/{sessionId}/satisfaction
+   * ✅ POST 체크리스트 만족도 조회 GET /checklists/post/session/{sessionId}/satisfaction
    */
   @GetMapping("/session/{sessionId}/satisfaction")
   public ResponseEntity<PostChecklistSatisfactionDto> getSatisfaction(
-      @PathVariable(name = "sessionId") Long sessionId
-  ) {
-      PostChecklistSatisfactionDto dto =
-          postChecklistQueryService.getSatisfaction(sessionId);
+      @PathVariable(name = "sessionId") Long sessionId) {
+    PostChecklistSatisfactionDto dto = postChecklistQueryService.getSatisfaction(sessionId);
 
-      // 만족도 없으면 200 + null (프론트에서 정상 처리)
-      return ResponseEntity.ok(dto);
+    // 만족도 없으면 200 + null (프론트에서 정상 처리)
+    return ResponseEntity.ok(dto);
   }
-  
+
   /**
    * ✅ POST 체크리스트 세션 삭제
    */
   @DeleteMapping("/session/{sessionId}")
-  public ResponseEntity<Void> deletePostSession(
-          @PathVariable("sessionId") Long sessionId
-  ) {
-      postChecklistService.deleteSession(sessionId);
-      return ResponseEntity.noContent().build();
+  public ResponseEntity<Void> deletePostSession(@PathVariable("sessionId") Long sessionId) {
+    postChecklistService.deleteSession(sessionId);
+    return ResponseEntity.noContent().build();
   }
 
   /**
-   * ✅ POST 체크리스트 만족도 저장
-   * POST /checklists/post/session/{sessionId}/satisfaction
+   * ✅ POST 체크리스트 만족도 저장 POST /checklists/post/session/{sessionId}/satisfaction
    */
   @PostMapping("/session/{sessionId}/satisfaction")
-  public ResponseEntity<Void> saveSatisfaction(
-      @PathVariable("sessionId") Long sessionId,
-      @RequestBody PostChecklistSatisfactionDto dto
-  ) {
-      postChecklistService.saveSatisfaction(
-          sessionId,
-          dto.getRating(),
-          dto.getCommentText()
-      );
-      return ResponseEntity.ok().build();
+  public ResponseEntity<Void> saveSatisfaction(@PathVariable("sessionId") Long sessionId,
+      @RequestBody PostChecklistSatisfactionDto dto) {
+    postChecklistService.saveSatisfaction(sessionId, dto.getRating(), dto.getCommentText());
+    return ResponseEntity.ok().build();
   }
 
-  
+  /*
+   * POST 체크리스트 현재 상태 요약 AI
+   */
+  @GetMapping("/session/{sessionId}/review")
+  public PostChecklistReviewResponse reviewPostChecklist(@PathVariable("sessionId") Long sessionId) {
+    return postChecklistQueryService.reviewCurrentStatus(sessionId);
+  }
+
 }

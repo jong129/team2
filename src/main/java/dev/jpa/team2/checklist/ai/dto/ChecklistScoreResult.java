@@ -11,6 +11,7 @@ import lombok.Setter;
 public class ChecklistScoreResult {
 
     private Long itemId;
+    private String title;
     private Double importanceScore;
     private String reason;
 }

@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Map;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -50,12 +51,12 @@ public class DocumentsCont {
   @PostMapping("/analyze")
   public ResponseEntity<String> analyze(@ModelAttribute DocumentsDTO documentsDTO) {
 
-    MultipartFile mf = documentsDTO.getFile1MF();
+    List<MultipartFile> mfs = documentsDTO.getFileMFs();
     Number userId = documentsDTO.getUserId();
 
     log.info("문서 분석 요청 수신 userId={}", userId);
 
-    if (mf == null || mf.isEmpty()) {
+    if (mfs == null || mfs.isEmpty()) {
       throw new BusinessException(ErrorCode.FILE_MISSING);
     }
     if (userId == null) {
@@ -67,14 +68,19 @@ public class DocumentsCont {
     try {
       // 1) 파일 저장
       String upDir = Tool.getServerDir("documents");
-      String savedFilename = Upload.saveFile(mf, upDir);
-      documentsDTO.setFilePath(savedFilename);
+      
+      List<String> filePaths = new ArrayList<>();
+      for (MultipartFile f : mfs) {
+        String savedFilename = Upload.saveFile(f, upDir);
+        filePaths.add(savedFilename);
+    }
+      documentsDTO.setFilePaths(filePaths);
       // (중요) 파일명/경로를 DB에 남길 필드가 있으면 DTO에 세팅해두기
       // documentsDTO.setFile1(savedFilename); // 필드명 프로젝트에 맞게
 
       // 2) FastAPI 호출
-      String url = "http://121.160.42.81:8000/document/analyze";
-      log.info("[FASTAPI] 요청 시작 url={}, image_path={}", url, savedFilename);
+      String url = "http://localhost:8000/document/analyze";
+      log.info("[FASTAPI] 요청 시작 url={}, image_path={}", url);
 
       HttpHeaders headers = new HttpHeaders();
       headers.setContentType(MediaType.APPLICATION_JSON);
@@ -82,7 +88,7 @@ public class DocumentsCont {
       Map<String, Object> body = new HashMap<>();
       body.put("SpringBoot_FastAPI_KEY", llmRequestConfig.getSpringBoot_FastAPI_KEY());
       body.put("userId", userId);
-      body.put("image_path", savedFilename);
+      body.put("image_paths", filePaths);
 
       HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
@@ -166,7 +172,7 @@ public class DocumentsCont {
           ingestBody.put("docs", List.of(oneDoc));
 
           // (4) FastAPI /ingest 호출
-          String ingestUrl = "http://121.160.42.21:8000/ingest";
+          String ingestUrl = "http://localhost:8000/ingest";
 
           HttpHeaders ingestHeaders = new HttpHeaders();
           ingestHeaders.setContentType(MediaType.APPLICATION_JSON);

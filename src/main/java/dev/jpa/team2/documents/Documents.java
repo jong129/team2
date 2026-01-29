@@ -1,6 +1,7 @@
 package dev.jpa.team2.documents;
 
 import java.util.Date;
+import java.util.List;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,7 +11,6 @@ import jakarta.persistence.InheritanceType;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
-import jakarta.persistence.Transient;
 import lombok.Getter;
 import lombok.Setter;
 import jakarta.persistence.GeneratedValue;
@@ -35,7 +35,7 @@ public class Documents {
   private String docType;     // CONTRACT(계약서) / REGISTRY(등본) / BUILDING(건축물대장)
 
   @Column(name = "FILE_PATH", length = 500)
-  private String filePath;
+  private List<String> filePaths;
 
   @Column(name = "STATUS", length = 20)
   private String status = "UPLOADED";   // 업로드/분석중/완료
@@ -43,40 +43,16 @@ public class Documents {
   @Temporal(TemporalType.TIMESTAMP)
   @Column(name = "CREATED_AT")
   private Date createdAt = new Date();
-  // 파일 업로드 관련
-  // -----------------------------------------------------------------------------------
-  @Transient
-  private String file1 = "";
-  @Transient
-  private String file1saved = "";
-  @Transient
-  private String thumb1="";
-  @Transient
-  private long size1 = 0;
-  
-//-----------------------------------------------------------------------------------
+
   public Documents(){
     
   }
-  public Documents(long userId, String docType, String filePath, String status, Date createdAt) {
+  public Documents(long userId, String docType, List<String> filePaths, String status, Date createdAt) {
     super();
     this.userId = userId;
     this.docType = docType;
-    this.filePath = filePath;
+    this.filePaths = filePaths;
     this.status = status;
     this.createdAt = createdAt;   
-  }
-  public Documents(long userId, String docType, String filePath, String status, Date createdAt, 
-      String file1, String file1saved, String thumb1, long size1) {
-    super();
-    this.userId = userId;
-    this.docType = docType;
-    this.filePath = filePath;
-    this.status = status;
-    this.createdAt = createdAt;   
-    this.file1 = file1;
-    this.file1saved = file1saved;
-    this.thumb1 = thumb1;
-    this.size1 = size1;
   }
 }

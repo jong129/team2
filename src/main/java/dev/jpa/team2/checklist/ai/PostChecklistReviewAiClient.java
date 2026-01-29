@@ -14,26 +14,15 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class PostChecklistReviewAiClient {
 
-    private final RestTemplate restTemplate;
+  private final RestTemplate restTemplate;
 
-    @Value("${llm.base-url}")
-    private String aiServerUrl;
+  @Value("${llm.base-url}")
+  private String aiServerUrl;
 
-    public PostChecklistReviewResponse review(
-        int total,
-        int done,
-        List<Map<String, Object>> notDoneItems
-    ) {
-        Map<String, Object> request = Map.of(
-            "total", total,
-            "done", done,
-            "notDoneItems", notDoneItems
-        );
+  public PostChecklistReviewResponse review(int total, int done, List<Map<String, Object>> notDoneItems) {
+    Map<String, Object> request = Map.of("total", total, "done", done, "notDoneItems", notDoneItems);
 
-        return restTemplate.postForObject(
-            aiServerUrl + "/checklists/post/review",
-            request,
-            PostChecklistReviewResponse.class
-        );
-    }
+    return restTemplate.postForObject(aiServerUrl + "/checklist/post/review", request,
+        PostChecklistReviewResponse.class);
+  }
 }

@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import dev.jpa.team2.checklist.ai.ChecklistAiScoreClient;
-import dev.jpa.team2.checklist.ai.PreRiskExplanationAiService;
 import dev.jpa.team2.checklist.ai.dto.AiRiskAnalysisResult;
 import dev.jpa.team2.checklist.ai.dto.ChecklistScoreRequest;
 import dev.jpa.team2.checklist.ai.dto.ChecklistScoreResponse;

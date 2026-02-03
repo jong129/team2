@@ -6,6 +6,7 @@ public interface MyPageLogWriter {
 
   // 회원정보수정 이력 + 회원활동 로그
   void onNameChanged(Long memberId, String oldName, String newName, HttpServletRequest request);
+  void onPhoneChanged(Long memberId, String oldPhone, String newPhone, HttpServletRequest request);
 
   // 회원 비번변경 이력 + 회원활동 로그
   void onPasswordChanged(Long memberId, HttpServletRequest request);

@@ -75,5 +75,27 @@ public class MyPageLogWriterImpl implements MyPageLogWriter {
     // 2) 활동 로그
     activityLogService.record(memberId, "WITHDRAW", reasonText, request);
   }
+  
+  @Override
+  public void onPhoneChanged(Long memberId, String oldPhone, String newPhone, HttpServletRequest request) {
+    if (memberId == null) return;
+
+    String oldV = safe(oldPhone);
+    String newV = safe(newPhone);
+
+    // 1) 회원정보 수정 이력 (본인 수정: changedById = memberId)
+    memberUpdateHistoryService.recordFieldChange(
+        memberId,
+        memberId,
+        "PHONE",
+        oldV,
+        newV,
+        "USER_CHANGE"
+    );
+
+    // 2) 활동 로그
+    activityLogService.record(memberId, "PROFILE_UPDATE", "PHONE", request);
+  }
+
 }
 

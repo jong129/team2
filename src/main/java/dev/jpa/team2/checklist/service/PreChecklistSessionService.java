@@ -5,14 +5,11 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import dev.jpa.team2.checklist.ai.ChecklistAiScoreClient;
 import dev.jpa.team2.checklist.ai.dto.AiRiskAnalysisResult;
 import dev.jpa.team2.checklist.ai.dto.ChecklistScoreRequest;
@@ -34,11 +31,14 @@ import dev.jpa.team2.checklist.model.ChecklistResponse;
 import dev.jpa.team2.checklist.model.ChecklistSession;
 import dev.jpa.team2.checklist.model.ChecklistTemplate;
 import dev.jpa.team2.checklist.model.ChecklistTemplateItem;
+import dev.jpa.team2.checklist.policy.PreRiskPolicy;
 import dev.jpa.team2.checklist.repository.ItemRepository;
 import dev.jpa.team2.checklist.repository.ResponseRepository;
 import dev.jpa.team2.checklist.repository.SessionRepository;
 import dev.jpa.team2.checklist.repository.TemplateItemRepository;
 import dev.jpa.team2.checklist.repository.TemplateRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -283,8 +283,15 @@ public class PreChecklistSessionService {
     List<String> aiReasons = aiResult.getReasons();
     List<ChecklistScoreResult> detailItems = aiResult.getAllResults();
 
-    // 3️⃣ POST 분기
-    String postGroupCode = riskScoreSum >= 70 ? "POST_B" : "POST_A";
+    // 3️⃣ POST 분기 (정책 기반)
+    // - 누적 위험 점수 기준
+    boolean highByTotal = riskScoreSum >= PreRiskPolicy.TOTAL_RISK_THRESHOLD;
+
+    // - 단일 항목 초고위험 기준
+    boolean highBySingle = aiResult.hasHighRiskItem(PreRiskPolicy.SINGLE_ITEM_THRESHOLD);
+
+    // - 최종 분기 결정
+    String postGroupCode = (highByTotal || highBySingle) ? "POST_B" : "POST_A";
 
     // 4️⃣ 응답 DTO
     PreChecklistResultResponse response = new PreChecklistResultResponse();

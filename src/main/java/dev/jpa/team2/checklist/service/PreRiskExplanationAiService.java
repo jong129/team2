@@ -24,21 +24,20 @@ public class PreRiskExplanationAiService {
    */
   public PreRiskExplanationDto generateExplanation(Double riskScoreSum, List<String> aiReasons) {
 
-    // 1️⃣ 필수 값 검증 (절대 null이면 안 됨)
+    // 1️⃣ 필수 값 검증
     if (riskScoreSum == null) {
       throw new IllegalStateException("riskScoreSum is null");
     }
 
-    // 2️⃣ reason 없음 → AI 호출 ❌, 기본 설명 ⭕
-    if (aiReasons == null || aiReasons.isEmpty()) {
-      return buildDefaultExplanation(riskScoreSum);
-    }
+    // 2️⃣ reason 없으면 안전 요약용 문구 주입
+    List<String> reasonsForAi = (aiReasons == null || aiReasons.isEmpty()) ? List.of("모든 사전 체크 항목이 완료되었습니다.")
+        : aiReasons;
 
     // 3️⃣ FastAPI 호출
     try {
-      PreRiskExplanationDto result = preRiskExplanationAiClient.generateExplanation(riskScoreSum, aiReasons);
+      PreRiskExplanationDto result = preRiskExplanationAiClient.generateExplanation(riskScoreSum, reasonsForAi);
 
-      // 4️⃣ AI 실패(null) → fallback
+      // 4️⃣ AI 실패 → fallback
       if (result == null) {
         log.warn("PRE 위험 설명 AI 응답 null → 기본 설명으로 대체");
         return buildDefaultExplanation(riskScoreSum);
@@ -47,7 +46,6 @@ public class PreRiskExplanationAiService {
       return result;
 
     } catch (Exception e) {
-      // 5️⃣ 예외 발생 → fallback
       log.warn("PRE 위험 설명 AI 호출 중 예외 발생 → 기본 설명으로 대체", e);
       return buildDefaultExplanation(riskScoreSum);
     }

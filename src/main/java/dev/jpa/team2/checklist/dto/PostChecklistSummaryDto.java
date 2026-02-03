@@ -1,13 +1,19 @@
 package dev.jpa.team2.checklist.dto;
 
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
+@NoArgsConstructor
 @AllArgsConstructor
 public class PostChecklistSummaryDto {
 
-    private String level;     // "안전" | "주의" | "위험" 등
-    private String message;   // 프론트 표시용 메시지
+  /** 요약 문장 */
+  private String summary;
 
+  /** 완료 후 유지/관리 가이드 */
+  private List<String> guides;
 }

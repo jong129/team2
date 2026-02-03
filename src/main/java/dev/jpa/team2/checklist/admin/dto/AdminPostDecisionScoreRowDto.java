@@ -9,5 +9,5 @@ public class AdminPostDecisionScoreRowDto {
 
     private Long itemId;
     private String title;
-    private Double importanceScore;
+    private Integer importanceScore;
 }

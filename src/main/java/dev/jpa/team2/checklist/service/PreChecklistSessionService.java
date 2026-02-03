@@ -229,7 +229,7 @@ public class PreChecklistSessionService {
     Map<Long, CheckStatus> statusMap = responses.stream().collect(
         Collectors.toMap(ChecklistResponse::getItemId, ChecklistResponse::getCheckStatus, (oldVal, newVal) -> newVal));
 
-    return new PreChecklistSessionDto(session.getSessionId(), session.getTemplateId(),
+    return new PreChecklistSessionDto(session.getSessionId(), session.getTemplateId(), session.getStatus(),
         items.stream()
             .map(it -> new PreChecklistSessionItemDto(it.getItemId(), it.getCheckArea(), it.getTitle(),
                 it.getDescription(), it.getRequiredYn(), statusMap.getOrDefault(it.getItemId(), CheckStatus.NOT_DONE)))
@@ -359,9 +359,8 @@ public class PreChecklistSessionService {
           return dto;
         }).toList();
 
-        // 6️⃣ 전체 위험 점수
-        double totalScore = allResults.stream().map(ChecklistScoreResult::getImportanceScore).filter(Objects::nonNull)
-            .mapToDouble(Double::doubleValue).sum();
+        // 6️⃣ 전체 위험 점수 (AI 정규화 점수 사용)
+        double totalScore = aiResponse.getRiskScore() != null ? aiResponse.getRiskScore() : 0.0;
 
         // 7️⃣ 중요도 기준 정렬
         List<ChecklistScoreResult> sorted = allResults.stream().filter(r -> r.getImportanceScore() != null)

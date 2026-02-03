@@ -12,5 +12,9 @@ import lombok.Setter;
 @Setter
 public class ChecklistScoreResponse {
 
+    /** 전체 위험도 점수 (0~100) */
+    private Integer riskScore;
+
+    /** 항목별 중요도 점수 */
     private List<ChecklistScoreResult> scores;
 }

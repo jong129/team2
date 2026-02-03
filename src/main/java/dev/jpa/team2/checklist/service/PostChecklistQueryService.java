@@ -1,6 +1,6 @@
 package dev.jpa.team2.checklist.service;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -11,13 +11,16 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import dev.jpa.team2.checklist.ai.PostChecklistReviewAiClient;
 import dev.jpa.team2.checklist.dto.PostChecklistDto;
 import dev.jpa.team2.checklist.dto.PostChecklistHistoryRowDto;
 import dev.jpa.team2.checklist.dto.PostChecklistItemDto;
-import dev.jpa.team2.checklist.dto.PostChecklistReviewItemDto;
 import dev.jpa.team2.checklist.dto.PostChecklistReviewResponse;
 import dev.jpa.team2.checklist.dto.PostChecklistSatisfactionDto;
+import dev.jpa.team2.checklist.dto.PostChecklistSummaryDto;
 import dev.jpa.team2.checklist.dto.PostItemStatusDto;
 import dev.jpa.team2.checklist.enums.CheckStatus;
 import dev.jpa.team2.checklist.enums.ChecklistPhase;
@@ -26,12 +29,12 @@ import dev.jpa.team2.checklist.model.ChecklistItem;
 import dev.jpa.team2.checklist.model.ChecklistResponse;
 import dev.jpa.team2.checklist.model.ChecklistSession;
 import dev.jpa.team2.checklist.model.ChecklistTemplate;
+import dev.jpa.team2.checklist.model.PostChecklistSummary;
 import dev.jpa.team2.checklist.repository.ChecklistSatisfactionRepository;
-import dev.jpa.team2.checklist.repository.ItemMasterRepository;
 import dev.jpa.team2.checklist.repository.ItemRepository;
+import dev.jpa.team2.checklist.repository.PostChecklistSummaryRepository;
 import dev.jpa.team2.checklist.repository.ResponseRepository;
 import dev.jpa.team2.checklist.repository.SessionRepository;
-import dev.jpa.team2.checklist.repository.TemplateItemRepository;
 import dev.jpa.team2.checklist.repository.TemplateRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -45,11 +48,12 @@ public class PostChecklistQueryService {
   private final ItemRepository itemRepository;
   private final ChecklistSatisfactionRepository satisfactionRepository;
   private final PostChecklistReviewAiClient postChecklistReviewAiClient;
+  private final PostChecklistSummaryRepository summaryRepository;
 
   /**
    * ✅ POST 체크리스트 기록 조회
    */
-  public Page<PostChecklistHistoryRowDto> getPostHistory(Long memberId, SessionStatus status, Date from, Date to,
+  public Page<PostChecklistHistoryRowDto> getPostHistory(Long memberId, SessionStatus status, LocalDateTime from, LocalDateTime to,
       int page, int size) {
     Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "sessionId"));
 
@@ -88,7 +92,8 @@ public class PostChecklistQueryService {
         item.getCheckArea(), item.getTitle(), item.getDescription(), item.getRequiredYn())).toList();
 
     // 5️⃣ 반환
-    return new PostChecklistDto(session.getSessionId(), template.getTemplateId(), template.getTemplateName(), items);
+    return new PostChecklistDto(session.getSessionId(), session.getStatus(), template.getTemplateId(),
+        template.getTemplateName(), items);
   }
 
   /**
@@ -144,6 +149,29 @@ public class PostChecklistQueryService {
 
     // ✅ AI 서버 호출
     return postChecklistReviewAiClient.review(totalCount, doneCount, notDoneItems);
+  }
+
+  @Transactional(readOnly = true)
+  public PostChecklistSummaryDto getPostSummary(Long sessionId) {
+
+    PostChecklistSummary summary = summaryRepository.findBySessionId(sessionId)
+        .orElseThrow(() -> new IllegalStateException("POST 요약이 존재하지 않습니다."));
+
+    List<String> guides = List.of();
+
+    // GUIDES_JSON 파싱
+    if (summary.getGuidesJson() != null && !summary.getGuidesJson().isBlank()) {
+      try {
+        ObjectMapper mapper = new ObjectMapper();
+        guides = mapper.readValue(summary.getGuidesJson(), new TypeReference<List<String>>() {
+        });
+      } catch (Exception e) {
+        // 가이드는 부가 정보 → 파싱 실패해도 전체 흐름은 깨지지 않게
+        guides = List.of();
+      }
+    }
+
+    return new PostChecklistSummaryDto(summary.getSummaryText(), guides);
   }
 
 }

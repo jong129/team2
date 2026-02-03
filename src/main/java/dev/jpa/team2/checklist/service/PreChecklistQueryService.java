@@ -1,7 +1,7 @@
 package dev.jpa.team2.checklist.service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -29,92 +29,49 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class PreChecklistQueryService {
 
-    private final ItemRepository itemRepository;
-    private final ResponseRepository responseRepository;
-    private final SessionRepository sessionRepository; // ✅ 추가
+  private final ItemRepository itemRepository;
+  private final ResponseRepository responseRepository;
+  private final SessionRepository sessionRepository; // ✅ 추가
 
-    /**
-     * PRE 체크리스트 항목 조회
-     */
-    @Transactional(readOnly = true)
-    public List<PreChecklistItemDto> getItemsWithStatus(Long sessionId) {
+  /**
+   * PRE 체크리스트 항목 조회
+   */
+  @Transactional(readOnly = true)
+  public List<PreChecklistItemDto> getItemsWithStatus(Long sessionId) {
 
-      List<ChecklistItem> items =
-          itemRepository.findBySessionId(sessionId);
+    List<ChecklistItem> items = itemRepository.findBySessionId(sessionId);
 
-      Map<Long, ChecklistResponse> responseMap =
-          responseRepository.findBySessionId(sessionId)
-              .stream()
-              .collect(Collectors.toMap(
-                  ChecklistResponse::getItemId,
-                  r -> r
-              ));
+    Map<Long, ChecklistResponse> responseMap = responseRepository.findBySessionId(sessionId).stream()
+        .collect(Collectors.toMap(ChecklistResponse::getItemId, r -> r));
 
-      List<PreChecklistItemDto> result = new ArrayList<>();
+    List<PreChecklistItemDto> result = new ArrayList<>();
 
-      for (ChecklistItem item : items) {
-          ChecklistResponse resp = responseMap.get(item.getItemId());
+    for (ChecklistItem item : items) {
+      ChecklistResponse resp = responseMap.get(item.getItemId());
 
-          result.add(
-              new PreChecklistItemDto(
-                  item.getItemId(),
-                  item.getItemOrder(),
-                  item.getTitle(),
-                  item.getDescription(),
-                  item.getRequiredYn(),
-                  resp != null ? resp.getCheckStatus() : null
-              )
-          );
-      }
+      result.add(new PreChecklistItemDto(item.getItemId(), item.getItemOrder(), item.getTitle(), item.getDescription(),
+          item.getRequiredYn(), resp != null ? resp.getCheckStatus() : null));
+    }
 
-      return result;
+    return result;
   }
 
+  /**
+   * PRE 체크리스트 기록 조회
+   */
+  public Page<PreChecklistHistoryRowDto> getPreHistory(Long memberId, SessionStatus status, LocalDateTime from,
+      LocalDateTime to, int page, int size) {
+    Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "sessionId"));
 
+    return sessionRepository.searchPreHistory(memberId, ChecklistPhase.PRE, status, from, to, pageable)
+        .map(s -> new PreChecklistHistoryRowDto(s.getSessionId(), s.getStatus(), s.getStartedAt(), s.getCompletedAt()));
+  }
 
-    /**
-     * PRE 체크리스트 기록 조회
-     */
-    public Page<PreChecklistHistoryRowDto> getPreHistory(
-        Long memberId,
-        SessionStatus status,
-        Date from,
-        Date to,
-        int page,
-        int size
-    ) {
-        Pageable pageable =
-            PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "sessionId"));
+  @Transactional(readOnly = true)
+  public List<PreItemStatusDto> getPreStatuses(Long sessionId) {
 
-        return sessionRepository
-            .searchPreHistory(
-                memberId,
-                ChecklistPhase.PRE,
-                status,
-                from,
-                to,
-                pageable
-            )
-            .map(s -> new PreChecklistHistoryRowDto(
-                s.getSessionId(),
-                s.getStatus(),
-                s.getStartedAt(),
-                s.getCompletedAt()
-            ));
-    }
-
-    
-    @Transactional(readOnly = true)
-    public List<PreItemStatusDto> getPreStatuses(Long sessionId) {
-
-        return responseRepository
-            .findBySessionId(sessionId)
-            .stream()
-            .map(r -> new PreItemStatusDto(
-                r.getItemId(),
-                r.getCheckStatus()
-            ))
-            .toList();
-    }
+    return responseRepository.findBySessionId(sessionId).stream()
+        .map(r -> new PreItemStatusDto(r.getItemId(), r.getCheckStatus())).toList();
+  }
 
 }

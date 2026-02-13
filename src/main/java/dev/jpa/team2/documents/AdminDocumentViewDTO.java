@@ -4,6 +4,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Date;
+import java.util.List;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -16,8 +17,8 @@ public class AdminDocumentViewDTO {
   private Long docId;
   private Long userId;
   private String docType;
-  private String filePath;
-  private String imageUrl;   // ✅ 추가
+  private List<String> filePaths;
+  private List<String> imageUrl;   // ✅ 추가
   private String status;
   private Date createdAt;
 
@@ -36,10 +37,10 @@ public class AdminDocumentViewDTO {
     dto.setDocId(d.getDocId());
     dto.setUserId(d.getUserId());
     dto.setDocType(d.getDocType());
-    dto.setFilePath(d.getFilePath());
+    dto.setFilePaths(d.getFilePaths());
 
     // ✅ 핵심: 로컬 경로 → 브라우저용 URL
-    dto.setImageUrl(toImageUrl(d.getFilePath()));
+    //dto.setImageUrl(toImageUrl(d.getFilePaths()));
 
     dto.setStatus(d.getStatus());
     dto.setCreatedAt(d.getCreatedAt());
@@ -58,17 +59,17 @@ public class AdminDocumentViewDTO {
   }
 
   // ✅ static 이어야 함
-  private static String toImageUrl(String filePath) {
-    if (filePath == null || filePath.isBlank()) return null;
-
-    // C:\kd\team2\team2\documents\storage\제너스빌_303호_1_20.jpg
-    String filename = Paths.get(filePath).getFileName().toString();
-
-    // 한글/공백 URL 인코딩
-    String encoded = URLEncoder
-        .encode(filename, StandardCharsets.UTF_8)
-        .replace("+", "%20");
-
-    return "/files/" + encoded;
-  }
+//  private static String toImageUrl(String filePath) {
+//    if (filePath == null || filePath.isBlank()) return null;
+//
+//    // C:\kd\team2\team2\documents\storage\제너스빌_303호_1_20.jpg
+//    String filename = Paths.get(filePath).getFileName().toString();
+//
+//    // 한글/공백 URL 인코딩
+//    String encoded = URLEncoder
+//        .encode(filename, StandardCharsets.UTF_8)
+//        .replace("+", "%20");
+//
+//    return "/files/" + encoded;
+//  }
 }

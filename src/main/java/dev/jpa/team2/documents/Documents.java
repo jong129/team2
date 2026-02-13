@@ -34,16 +34,17 @@ public class Documents {
   @Column(name = "DOC_TYPE", length = 50, nullable = false)
   private String docType;     // CONTRACT(계약서) / REGISTRY(등본) / BUILDING(건축물대장)
 
-  @Column(name = "FILE_PATH", length = 500)
-  private List<String> filePaths;
-
   @Column(name = "STATUS", length = 20)
   private String status = "UPLOADED";   // 업로드/분석중/완료
 
+  @Column(name = "TOTAL_RISK_SCORE", length = 20)
+  private Long totalRiskScore; // 종합점수
+  
   @Temporal(TemporalType.TIMESTAMP)
   @Column(name = "CREATED_AT")
   private Date createdAt = new Date();
-
+  
+  private List<String> filePaths;
   public Documents(){
     
   }
@@ -52,6 +53,13 @@ public class Documents {
     this.userId = userId;
     this.docType = docType;
     this.filePaths = filePaths;
+    this.status = status;
+    this.createdAt = createdAt;   
+  }
+  public Documents(long userId, String docType, String status, Date createdAt) {
+    super();
+    this.userId = userId;
+    this.docType = docType;
     this.status = status;
     this.createdAt = createdAt;   
   }

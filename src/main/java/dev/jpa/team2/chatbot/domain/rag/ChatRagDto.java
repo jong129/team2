@@ -14,6 +14,11 @@ public class ChatRagDto {
     // ===== 요청 =====
     private Long sessionId;
     private String question;
+    
+    private String docId;     // 문서 식별자
+    private String docType;   // "REGISTRY" | "CONTRACT" 등
+    private String stage;     // "analysis" 같은 단계
+    private Integer topK;     // optional
 
     // ===== 응답 =====
     private Long ragId;

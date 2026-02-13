@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import dev.jpa.team2.checklist.dto.PreChecklistResultResponse;
 import dev.jpa.team2.checklist.dto.PreChecklistSessionDto;
 import dev.jpa.team2.checklist.dto.PreChecklistSyncRequest;
 import dev.jpa.team2.checklist.dto.PreItemStatusDto;
@@ -31,7 +32,7 @@ public class PreChecklistSessionController {
   private final PreChecklistQueryService preChecklistQueryService;
 
   /**
-   * ✅ PRE 체크리스트 세션 시작 POST /checklists/pre/session/start?memberId=?
+   * PRE 체크리스트 시작 - IN_PROGRESS 세션이 있으면 재사용 - 없으면 신규 생성 (기본 진입점)
    */
   @PostMapping("/session/start")
   public ResponseEntity<PreSessionStartResponseDto> startPreSession(@RequestParam("memberId") Long memberId) {
@@ -41,6 +42,9 @@ public class PreChecklistSessionController {
         new PreSessionStartResponseDto(session.getSessionId(), session.getTemplateId(), session.getStatus(), false));
   }
 
+  /**
+   * PRE 체크리스트 신규 시작 - 항상 신규 세션 생성 (사용자 명시적 선택)
+   */
   @PostMapping("/session/start-new")
   public ResponseEntity<PreSessionStartResponseDto> startNewPreSession(@RequestParam("memberId") Long memberId) {
     ChecklistSession session = preChecklistService.startNewPreSession(memberId);
@@ -84,6 +88,15 @@ public class PreChecklistSessionController {
   @GetMapping("/session/{sessionId}")
   public ResponseEntity<PreChecklistSessionDto> getPreSession(@PathVariable("sessionId") Long sessionId) {
     return ResponseEntity.ok(preChecklistService.getPreSession(sessionId));
+  }
+
+  /**
+   * ✅ PRE 체크리스트 결과 조회 (결과 요약 + 위험 설명) GET
+   * /checklists/pre/session/{sessionId}/result
+   */
+  @GetMapping("/session/{sessionId}/result")
+  public ResponseEntity<PreChecklistResultResponse> getPreChecklistResult(@PathVariable("sessionId") Long sessionId) {
+    return ResponseEntity.ok(preChecklistService.getPreChecklistResult(sessionId));
   }
 
   @GetMapping("/session/{sessionId}/statuses")

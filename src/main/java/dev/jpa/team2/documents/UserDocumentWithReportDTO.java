@@ -1,6 +1,8 @@
 package dev.jpa.team2.documents;
 
 import java.util.Date;
+import java.util.List;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -11,7 +13,7 @@ public class UserDocumentWithReportDTO {
   private Long docId;
   private Long userId;
   private String docType;
-  private String filePath;
+  private List<String> filePaths;
   private String status;
   private Date createdAt;
 
@@ -28,7 +30,7 @@ public class UserDocumentWithReportDTO {
     dto.setDocId(d.getDocId());
     dto.setUserId(d.getUserId());
     dto.setDocType(d.getDocType());
-    dto.setFilePath(d.getFilePath());
+    dto.setFilePaths(d.getFilePaths());
     dto.setStatus(d.getStatus());
     dto.setCreatedAt(d.getCreatedAt());
 

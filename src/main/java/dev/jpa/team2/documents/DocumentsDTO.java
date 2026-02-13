@@ -49,6 +49,14 @@ public class DocumentsDTO {
     this.status = status;
     this.createdAt = createdAt;
   }
+  public DocumentsDTO(Long docId, Long userId, String docType,
+      String status, Date createdAt) {
+this.docId = docId;
+this.userId = userId;
+this.docType = docType;
+this.status = status;
+this.createdAt = createdAt;
+}
   public Documents toEntity() {
     return new Documents(userId, docType, filePaths, status, createdAt);
   }

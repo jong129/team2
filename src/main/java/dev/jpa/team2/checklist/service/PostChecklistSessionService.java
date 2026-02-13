@@ -261,6 +261,25 @@ public class PostChecklistSessionService {
     // 🔍 [LOG-5] 아이템 복제 완료 확인
     log.info("[POST][CREATE] copied {} items into sessionId={}", copiedCount, saved.getSessionId());
 
+    // =================================================
+    // 🔥 POST CHECKLIST_RESPONSE 초기화 (중요)
+    // - 모든 항목을 NOT_DONE으로 미리 생성
+    // =================================================
+    List<ChecklistItem> sessionItems = itemRepository.findBySessionIdOrderByItemOrderAsc(saved.getSessionId());
+
+    for (ChecklistItem item : sessionItems) {
+
+      ChecklistResponse response = new ChecklistResponse();
+      response.setSessionId(saved.getSessionId());
+      response.setItemId(item.getItemId());
+      response.setCheckStatus(CheckStatus.NOT_DONE);
+      response.setUpdatedAt(new Date());
+
+      responseRepository.save(response);
+    }
+
+    log.info("[POST][CREATE] initialized {} checklist responses (NOT_DONE)", sessionItems.size());
+
     return new PostStartResponse(saved.getSessionId(), postGroupCode, template.getTemplateId());
   }
 
@@ -288,13 +307,24 @@ public class PostChecklistSessionService {
    */
   @Transactional
   public void completeSession(Long sessionId) {
+
     ChecklistSession session = sessionRepository.findById(sessionId)
         .orElseThrow(() -> new IllegalArgumentException("세션 없음"));
 
+    // ✅ 이미 완료된 세션 방어
+    if (session.getStatus() == SessionStatus.COMPLETED) {
+      return; // 또는 예외
+    }
+
+    // ✅ POST는 NOT_DONE 하나라도 있으면 완료 불가
+    boolean existsNotDone = responseRepository.existsBySessionIdAndCheckStatus(sessionId, CheckStatus.NOT_DONE);
+
+    if (existsNotDone) {
+      throw new IllegalStateException("미완료 항목이 존재하여 완료할 수 없습니다.");
+    }
+
     session.setStatus(SessionStatus.COMPLETED);
     session.setCompletedAt(new Date());
-
-    sessionRepository.save(session);
   }
 
   /**

@@ -1,23 +1,20 @@
 package dev.jpa.team2.checklist.service;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
-import lombok.RequiredArgsConstructor;
 import dev.jpa.team2.checklist.dto.PreChecklistTemplateDto;
 import dev.jpa.team2.checklist.dto.PreChecklistTemplateItemDto;
 import dev.jpa.team2.checklist.enums.ChecklistPhase;
-import dev.jpa.team2.checklist.enums.TemplateStatus;
 import dev.jpa.team2.checklist.model.ChecklistItemMaster;
 import dev.jpa.team2.checklist.model.ChecklistTemplate;
 import dev.jpa.team2.checklist.model.ChecklistTemplateItem;
 import dev.jpa.team2.checklist.repository.ItemMasterRepository;
 import dev.jpa.team2.checklist.repository.TemplateItemRepository;
 import dev.jpa.team2.checklist.repository.TemplateRepository;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor

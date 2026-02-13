@@ -49,6 +49,7 @@ public class PostChecklistSessionService {
   private final ChecklistSatisfactionRepository satisfactionRepository;
   private final ChecklistAiScoreClient checklistAiScoreClient;
   private final PostDecisionLogRepository postDecisionLogRepository;
+  private final PostChecklistSummaryService postChecklistSummaryService; 
 
   /**
    * POST 체크리스트 세션 시작
@@ -103,31 +104,45 @@ public class PostChecklistSessionService {
   }
 
   /**
-   * PRE 결과 기반 POST_GROUP_CODE 결정 - 모든 PRE 체크리스트 항목을 AI로 평가 - DONE / NOT_DONE 여부와
-   * 관계없이 AI 점수 기준 분기
+   * PRE 결과 기반 POST_GROUP_CODE 결정
+   *
+   * 분기 규칙: 1️⃣ NOT_DONE 항목이 0개면 → 무조건 POST_A 2️⃣ NOT_DONE 항목만 AI 중요도 평가 3️⃣
+   * NOT_DONE 중 importanceScore >= 80 하나라도 있으면 → POST_B 4️⃣ 그 외 → POST_A
    */
   private PostDecisionResult resolvePostGroupCode(ChecklistSession preSession) {
 
     log.info("[POST][RESOLVE] start resolvePostGroupCode preSessionId={}", preSession.getSessionId());
 
-    // 1️⃣ PRE 세션의 모든 응답 조회 (DONE / NOT_DONE 포함)
-    List<ChecklistResponse> responses = responseRepository.findBySessionId(preSession.getSessionId());
+    // =========================================================
+    // 1️⃣ NOT_DONE 응답만 조회
+    // =========================================================
+    List<ChecklistResponse> notDoneResponses = responseRepository
+        .findBySessionIdAndCheckStatus(preSession.getSessionId(), CheckStatus.NOT_DONE);
 
-    if (responses.isEmpty()) {
-      // 응답 자체가 없으면 가장 안전한 POST_A
+    // ✅ NOT_DONE이 하나도 없으면 무조건 POST_A
+    if (notDoneResponses.isEmpty()) {
+      log.info("[POST][RESOLVE] no NOT_DONE items → POST_A. preSessionId={}", preSession.getSessionId());
+
       return new PostDecisionResult("POST_A", 0.0, null);
     }
 
-    // 2️⃣ 응답에 해당하는 모든 ITEM 조회
-    List<Long> itemIds = responses.stream().map(ChecklistResponse::getItemId).distinct().toList();
+    // =========================================================
+    // 2️⃣ NOT_DONE 항목에 해당하는 ITEM 조회
+    // =========================================================
+    List<Long> itemIds = notDoneResponses.stream().map(ChecklistResponse::getItemId).distinct().toList();
 
     List<ChecklistItem> items = itemRepository.findBySessionIdAndItemIdIn(preSession.getSessionId(), itemIds);
 
     if (items.isEmpty()) {
+      // 방어 로직: 이 경우도 안전하게 POST_A
+      log.warn("[POST][RESOLVE] NOT_DONE exists but items empty → POST_A. preSessionId={}", preSession.getSessionId());
+
       return new PostDecisionResult("POST_A", 0.0, null);
     }
 
-    // 3️⃣ AI 점수 요청 DTO 생성 (⚠️ 전 항목 포함)
+    // =========================================================
+    // 3️⃣ AI 스코어 요청 (NOT_DONE 항목만)
+    // =========================================================
     ChecklistScoreRequest scoreRequest = new ChecklistScoreRequest();
     scoreRequest.setItems(items.stream().map(item -> {
       ChecklistScoreItem dto = new ChecklistScoreItem();
@@ -137,21 +152,28 @@ public class PostChecklistSessionService {
       return dto;
     }).toList());
 
-    // 4️⃣ 🔥 FastAPI AI 서버 호출 (항상 호출)
-    ChecklistScoreResponse scoreResponse = checklistAiScoreClient.scoreChecklistItems(scoreRequest);
+    ChecklistScoreResponse scoreResponse;
 
-    if (scoreResponse == null || scoreResponse.getScores() == null) {
+    try {
+      scoreResponse = checklistAiScoreClient.scoreChecklistItems(scoreRequest);
+    } catch (Exception e) {
+      // 🔥 AI 장애 시 보수적으로 POST_B
+      log.warn("[POST][RESOLVE][AI_FAIL] AI error → POST_B. preSessionId={}", preSession.getSessionId(), e);
 
-      log.warn("[POST][RESOLVE][AI_FAIL] AI score unavailable. fallback to POST_B. preSessionId={}",
-          preSession.getSessionId());
-
-      // AI 판단 불가 → 보수적 분기
       return new PostDecisionResult("POST_B", 0.0, null);
     }
 
-    // 5️⃣ 점수 집계 + 고위험 항목 판별
+    if (scoreResponse == null || scoreResponse.getScores() == null) {
+      log.warn("[POST][RESOLVE][AI_NULL] AI response invalid → POST_B. preSessionId={}", preSession.getSessionId());
+
+      return new PostDecisionResult("POST_B", 0.0, null);
+    }
+
+    // =========================================================
+    // 4️⃣ 고위험 항목 판단 (NOT_DONE 기준)
+    // =========================================================
+    boolean hasHighRisk = false;
     double riskScoreSum = 0.0;
-    List<Long> highRiskItemIds = new java.util.ArrayList<>();
 
     for (ChecklistScoreResult score : scoreResponse.getScores()) {
 
@@ -159,22 +181,26 @@ public class PostChecklistSessionService {
         continue;
       }
 
-      riskScoreSum += score.getImportanceScore();
+      int importanceScore = score.getImportanceScore(); // 0~100
 
-      // ⚠️ 고위험 기준 (조정 가능)
-      if (score.getImportanceScore() >= 0.8) {
-        highRiskItemIds.add(score.getItemId());
+      riskScoreSum += importanceScore;
+
+      // ⭐ 고위험 기준 (정책 기준)
+      if (importanceScore >= 80) {
+        hasHighRisk = true;
       }
     }
 
-    // 6️⃣ POST 분기 결정 (AI 기준 단일화)
-    String postGroupCode = (!highRiskItemIds.isEmpty() || riskScoreSum >= 1.5) ? "POST_B" : "POST_A";
+    // =========================================================
+    // 5️⃣ POST 분기 결정
+    // =========================================================
+    String postGroupCode = hasHighRisk ? "POST_B" : "POST_A";
 
-    log.info("[POST][RESOLVE][AI] groupCode={}, riskScoreSum={}, highRiskItemCount={}", postGroupCode, riskScoreSum,
-        highRiskItemIds.size());
+    log.info("[POST][RESOLVE][RESULT] postGroupCode={}, hasHighRisk={}, notDoneCount={}, riskScoreSum={}",
+        postGroupCode, hasHighRisk, notDoneResponses.size(), riskScoreSum);
 
-    return new PostDecisionResult(postGroupCode, riskScoreSum, highRiskItemIds.isEmpty() ? null
-        : highRiskItemIds.stream().map(String::valueOf).collect(Collectors.joining(",")));
+    return new PostDecisionResult(postGroupCode, riskScoreSum, null // 필요 시 고위험 itemId 목록 확장 가능
+    );
   }
 
   /**
@@ -311,20 +337,22 @@ public class PostChecklistSessionService {
     ChecklistSession session = sessionRepository.findById(sessionId)
         .orElseThrow(() -> new IllegalArgumentException("세션 없음"));
 
-    // ✅ 이미 완료된 세션 방어
     if (session.getStatus() == SessionStatus.COMPLETED) {
-      return; // 또는 예외
+      return;
     }
 
-    // ✅ POST는 NOT_DONE 하나라도 있으면 완료 불가
     boolean existsNotDone = responseRepository.existsBySessionIdAndCheckStatus(sessionId, CheckStatus.NOT_DONE);
 
     if (existsNotDone) {
       throw new IllegalStateException("미완료 항목이 존재하여 완료할 수 없습니다.");
     }
 
+    // ✅ 1️⃣ 상태 완료
     session.setStatus(SessionStatus.COMPLETED);
     session.setCompletedAt(new Date());
+
+    // ✅ 2️⃣ AI 요약 생성 + 저장
+    postChecklistSummaryService.generateAndSave(sessionId);
   }
 
   /**

@@ -1,6 +1,6 @@
 package dev.jpa.team2.checklist.controller;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -28,9 +28,9 @@ public class PostChecklistHistoryController {
         @RequestParam(name = "size", defaultValue = "5") int size,
         @RequestParam(name = "status", required = false) SessionStatus status,
         @RequestParam(name = "from", required = false)
-        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Date from,
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
         @RequestParam(name = "to", required = false)
-        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Date to
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to
     ) {
         return ResponseEntity.ok(
             new PostChecklistHistoryPageDto(

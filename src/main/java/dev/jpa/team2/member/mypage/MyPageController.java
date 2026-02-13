@@ -40,6 +40,15 @@ public class MyPageController {
     myPageService.updateName(session, dto, request);
     return ResponseEntity.ok(Map.of("success", true, "message", "이름이 변경되었습니다."));
   }
+  
+  @PutMapping("/profile/phone")
+  public ResponseEntity<?> updatePhone(@RequestBody MyPageUpdatePhoneReqDto dto,
+                                       HttpSession session,
+                                       HttpServletRequest request) {
+    myPageService.updatePhone(session, dto, request);
+    return ResponseEntity.ok(Map.of("success", true, "message", "전화번호가 변경되었습니다."));
+  }
+
 
   @PostMapping("/password/send")
   public ResponseEntity<?> sendPasswordCode(HttpSession session) {

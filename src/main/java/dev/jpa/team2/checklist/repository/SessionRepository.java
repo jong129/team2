@@ -1,5 +1,6 @@
 package dev.jpa.team2.checklist.repository;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -51,8 +52,8 @@ public interface SessionRepository
         @Param("memberId") Long memberId,
         @Param("phase") ChecklistPhase phase,
         @Param("status") SessionStatus status,
-        @Param("from") Date from,
-        @Param("to") Date to,
+        @Param("from") LocalDateTime from,
+        @Param("to") LocalDateTime to,
         Pageable pageable
     );
 

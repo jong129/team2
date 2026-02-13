@@ -97,6 +97,27 @@ public class MyPageService {
     logWriter.onNameChanged(memberId, oldName, newName, request);
   }
 
+  public void updatePhone(HttpSession session, MyPageUpdatePhoneReqDto dto, HttpServletRequest request) {
+    Long memberId = requireLoginMemberId(session);
+    Member m = requireUsableMember(memberId);
+
+    String newPhone = dto.getPhone() == null ? "" : dto.getPhone().trim();
+    if (newPhone.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "전화번호는 필수입니다.");
+
+    String oldPhone = m.getPhone();
+    if (oldPhone != null && oldPhone.equals(newPhone)) return;
+
+    int cnt = memberRepository.updatePhone(memberId, newPhone);
+
+    System.out.println(">>> updatePhone cnt=" + cnt + ", memberId=" + memberId + ", newPhone=" + newPhone);
+
+    if (cnt != 1) throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "전화번호 변경 실패");
+
+    logWriter.onPhoneChanged(memberId, oldPhone, newPhone, request);
+  }
+
+
+  
   /**
    * 비번 변경 Step1: 인증번호 발송 (마이페이지는 로그인 상태라 loginId/email을 DB에서 가져와 고정)
    */

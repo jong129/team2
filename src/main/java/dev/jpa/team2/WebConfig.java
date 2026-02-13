@@ -23,7 +23,9 @@ public class WebConfig implements WebMvcConfigurer {
                           "http://121.160.42.21:5173",
                           "http://121.160.42.28:5173",
                           "http://121.160.42.81:5173",
-                          "http://121.160.42.28:5173"                        
+                          "http://121.160.42.28:5173",
+                          "http://121.160.42.36:5173",
+                          "http://10.100.0.197:5173"
 
                 ) // 프론트엔드 출처
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")

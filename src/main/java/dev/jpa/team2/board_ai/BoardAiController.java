@@ -46,12 +46,20 @@ public class BoardAiController {
     @PostMapping("/write/{categoryId}")
     public AiWriteDraftResponse writeDraft(
             @PathVariable("categoryId") Long categoryId,
-            @RequestBody(required = false) AiWriteDraftRequest req,
+            @RequestBody AiWriteDraftRequest req,
             HttpSession session
     ) {
         Long memberId = requireLogin(session);
-        if (req == null) req = new AiWriteDraftRequest();
+        // title/content 둘 다 비면 400으로 컷
+        if ((req.getTitle() == null || req.getTitle().trim().isEmpty()) &&
+            (req.getContent() == null || req.getContent().trim().isEmpty())) {
+            throw new ResponseStatusException(
+                org.springframework.http.HttpStatus.BAD_REQUEST,
+                "title/content 둘 중 하나는 필요합니다."
+            );
+        }
         return boardAiService.generateWriteDraft(categoryId, memberId, req);
     }
+
 }
 
